@@ -8,6 +8,7 @@ import { listArticles, saveArticle, uploadImage } from './lib/articles.mjs';
 import { reviewPublication, publishArticle } from './lib/publish.mjs';
 import { translationSettings } from './lib/translation-settings.mjs';
 import { translations } from './lib/translations.mjs';
+import { listDeletions, deleteArticle, restoreDeletion, reviewDeletionPublication, publishDeletion, assertNotPendingDeletion } from './lib/deletions.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const settings = await translationSettings();
@@ -35,7 +36,7 @@ const server = createServer(async (req, res) => {
   if (req.headers.host !== `127.0.0.1:${port}`) return json(res, 403, { error:'Invalid host.' });
   const path = new URL(req.url, origin).pathname;
   try {
-    if (['/', '/app.js', '/translation-ui.js', '/style.css'].includes(path) && req.method === 'GET') {
+    if (['/', '/app.js', '/translation-ui.js', '/deletion-ui.js', '/style.css'].includes(path) && req.method === 'GET') {
       const file = path === '/' ? 'index.html' : path.slice(1);
       const source = (await readFile(resolve(root, 'scripts/editor-ui', file), 'utf8')).replace('__SESSION_KEY__', token);
       res.writeHead(200, {'Content-Type': file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/css; charset=utf-8'});
@@ -45,15 +46,23 @@ const server = createServer(async (req, res) => {
     if (req.headers['x-editor-key'] !== token) return json(res, 403, {error:'Reload the editor to reconnect.'});
     if (req.method === 'GET' && path === '/api/state') {
       const articles = await listArticles(root);
-      return json(res, 200, {articles, preview:previewUrl, previewError, job, translation:await translator.state(articles)});
+      return json(res, 200, {articles, deletions:await listDeletions(root), preview:previewUrl, previewError, job, translation:await translator.state(articles)});
     }
     if (req.method !== 'POST' || req.headers.origin !== origin || !req.headers['content-type']?.startsWith('application/json')) return json(res, 403, {error:'Same-origin JSON requests only.'});
     if (busy) return json(res, 409, {error:'Another save or publication is running. Please wait.'});
     busy = true;
     try {
       const input = await body(req);
+      if (['/api/delete','/api/restore-deletion','/api/review-deletion'].includes(path)) {
+        if ((await translator.state([])).job?.state === 'running') throw new Error('请等待翻译完成。 / Wait for translation to finish.');
+        review = null;
+        if (path === '/api/delete') return json(res,200,await deleteArticle(root,input));
+        if (path === '/api/restore-deletion') return json(res,200,await restoreDeletion(root,input));
+        review = {...await reviewDeletionPublication(root,input),nonce:randomBytes(24).toString('hex')};
+        return json(res,200,review);
+      }
       if (path === '/api/save') {
-        review = null; await translator.validateSave(input);
+        review = null; await assertNotPendingDeletion(root,input); await translator.validateSave(input);
         const saved = await saveArticle(root, input), translationWarning = await translator.afterSave(saved);
         return json(res, 200, { ...saved, translationWarning });
       }
@@ -67,10 +76,12 @@ const server = createServer(async (req, res) => {
       }
       if (path === '/api/publish') {
         if (!review || review.nonce !== input.nonce) throw new Error('Review the saved changes before publishing.');
+        if (review.kind === 'deletion' && (await translator.state([])).job?.state === 'running') throw new Error('请等待翻译完成。 / Wait for translation to finish.');
         const selected = review; review = null;
         job = { state:'running', log:'Checking content and building…\n' };
         // Keep the write lock until publication finishes. Never include credentials in logs.
-        publishArticle(root, selected, chunk => { job.log = (job.log + chunk).slice(-16_000); })
+        const publish = selected.kind === 'deletion' ? publishDeletion : publishArticle;
+        publish(root, selected, chunk => { job.log = (job.log + chunk).slice(-16_000); })
           .then(result => { job = { ...job, state:'complete', result }; })
           .catch(error => { job = { ...job, state:'failed', error:error.message }; })
           .finally(() => { busy = false; });

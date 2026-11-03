@@ -167,6 +167,16 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflo
 .translation-columns pre { max-height: 52dvh; padding: 12px; background: #f1eef7; }
 .model-label { margin-top: 24px; }
 .error, #translation-settings-message { color: #9c3549; }
+.danger { color: #993a4b; }
+.danger:hover:not(:disabled) { background: #fff0f2; border-color: #c88d99; }
+.deleted-articles { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 10px; }
+.deleted-articles > p, .deletion-row small { color: var(--muted); font-size: 12px; }
+.deletion-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.deletion-row > div { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+.deletion-row button { font-size: 12px; }
+#delete-name { font-weight: 650; }
+#delete-files { padding-left: 20px; overflow-wrap: anywhere; font-size: 13px; }
+#delete-language-note { color: var(--muted); font-size: 13px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 @media (max-width: 1250px) {
   .workspace { grid-template-columns: 232px minmax(0, 1fr); }

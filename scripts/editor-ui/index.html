@@ -63,14 +63,25 @@
                 <label class="check"><input name="featured" type="checkbox"><span data-i18n="featured">精选文章</span></label>
               </div>
             </details>
+            <button id="delete-article" type="button" class="quiet danger" data-deletion="delete">删除文章</button>
           </div>
         </div>
         <div class="action-bar"><label class="check"><input name="draft" type="checkbox" checked><span data-i18n="draft">草稿</span></label><span class="action-spacer"></span><button id="save" type="submit" data-i18n="save">保存到本机</button><a id="preview" class="button quiet" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="preview">预览文章 ↗</a><button id="review" class="primary" type="button" data-i18n="review">检查并发布</button></div>
         <p class="publish-note" data-i18n="publishNote">保存不会上传。取消“草稿”并保存后，可检查改动、构建并推送到 GitHub。公开仓库里的文章源码可被任何人查看。</p>
       </form>
+      <section id="deleted-articles" class="deleted-articles" hidden aria-labelledby="deleted-title"><h3 id="deleted-title" data-deletion="trash">已删除的文章</h3><p data-deletion="trashNote">本地副本可恢复；发布删除后，正式网站才会更新。</p><div id="deletion-list"></div></section>
       <section id="job" hidden><h3 data-i18n="progress">发布进度</h3><p id="job-status" role="status"></p><pre id="job-log"></pre><a id="actions" href="https://github.com/flandolusukalate/Flandolusukalate.github.io/actions" target="_blank" rel="noopener noreferrer" data-i18n="actions">查看 GitHub 部署进度 ↗</a></section>
     </main>
   </div>
+  <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-note">
+    <h2 id="delete-title" data-deletion="confirmTitle">删除这篇文章？</h2>
+    <p id="delete-name"></p>
+    <p id="delete-note" data-deletion="note">文章会从本地书架移除，并保留可恢复的副本。图片不会删除。正式网站需另行发布删除才会更新。</p>
+    <label id="delete-english-label" class="check"><input id="delete-english" type="checkbox"><span data-deletion="alsoEnglish">同时删除英文版</span></label>
+    <p id="delete-language-note"></p>
+    <ul id="delete-files"></ul><p id="delete-error" class="error" role="alert"></p>
+    <div class="dialog-actions"><button id="cancel-delete" type="button" data-deletion="cancel" autofocus>取消</button><button id="confirm-delete" type="button" class="danger" data-deletion="confirm">确认删除</button></div>
+  </dialog>
   <dialog id="review-dialog" aria-labelledby="review-title"><h2 id="review-title" data-i18n="reviewTitle">确认本次发布</h2><p id="review-summary"></p><p data-i18n="reviewNote">只提交下列文章及其引用的上传图片。检查与构建通过后推送；网站将在 GitHub 部署完成后更新。</p><ul id="review-files"></ul><details><summary data-i18n="diff">查看 Markdown 改动</summary><pre id="review-diff"></pre></details><div class="dialog-actions"><button id="cancel" type="button" data-i18n="cancel">返回编辑</button><button id="publish" class="primary" type="button" data-i18n="publish">构建并发布到 GitHub</button></div></dialog>
   <dialog id="translation-settings-dialog" aria-labelledby="translation-settings-title">
     <h2 id="translation-settings-title" data-tr="settings">翻译设置</h2>

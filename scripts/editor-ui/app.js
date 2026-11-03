@@ -1,4 +1,5 @@
 import { translationDesk } from './translation-ui.js';
+import { deletionDesk } from './deletion-ui.js';
 const $ = selector => document.querySelector(selector);
 const form = $('#article-form'), field = name => form.elements.namedItem(name);
 const key = $('meta[name="editor-key"]').content;
@@ -63,6 +64,7 @@ function refreshState() {
   $('#new').disabled = working;
   field('draft').disabled = !!pendingCandidate;
   translator.render();
+  deletions.render();
 }
 function updateCount() {
   $('#word-count').textContent = `${Array.from(field('body').value.replace(/\s/g, '')).length.toLocaleString(ui === 'en' ? 'en-US' : 'zh-CN')} ${t('characters')}`;
@@ -121,6 +123,18 @@ const translator = translationDesk({ api, locale:()=>ui, context:()=>({current,d
   selectArticle({ ...target, slug:candidate.slug, lang:'en', revision:target?.revision ?? null, data:candidate.data, body:candidate.body });
   pendingCandidate = candidate.id; dirty = true; refreshState();
 } });
+function showReview(reviewed, note) {
+  reviewNonce=reviewed.nonce;
+  $('#review-summary').textContent=reviewed.title;
+  $('#review-dialog [data-i18n=reviewNote]').textContent=note??t('reviewNote');
+  $('#review-files').replaceChildren(...reviewed.files.map(file=>{const li=document.createElement('li');li.textContent=file;return li;}));
+  $('#review-diff').textContent=reviewed.diff||reviewed.pending;
+  $('#review-dialog').showModal();
+}
+const deletions = deletionDesk({api,locale:()=>ui,context:()=>({current,dirty,working,articles}),run,message,review:showReview,async reload(){
+  const state=await api('state');articles=state.articles;translator.update(state.translation);deletions.update(state);
+  selectArticle(articles.find(article=>article.slug===current?.slug&&article.lang===current?.lang)??articles[0]??null);
+}});
 form.addEventListener('input', event => {dirty=true;if(event.target === field('body'))updateCount();refreshState();});
 // Native validation must be able to focus required fields inside a collapsed section.
 form.addEventListener('invalid', event => {
@@ -185,11 +199,7 @@ $('#image-file').addEventListener('change',event=>run(async()=>{
 $('#review').addEventListener('click',()=>run(async()=>{
   if(!current||dirty)throw new Error(t('saveFirst'));
   const reviewed=await api('review',{slug:current.slug,lang:current.lang});
-  reviewNonce=reviewed.nonce;
-  $('#review-summary').textContent=reviewed.title + ' · ' + reviewed.id.lang.toUpperCase();
-  $('#review-files').replaceChildren(...reviewed.files.map(file=>{const li=document.createElement('li');li.textContent=file;return li;}));
-  $('#review-diff').textContent=reviewed.diff || reviewed.pending;
-  $('#review-dialog').showModal();
+  showReview(reviewed);
 }));
 $('#cancel').addEventListener('click',()=>$('#review-dialog').close());
 $('#publish').addEventListener('click',()=>run(async()=>{
@@ -202,7 +212,7 @@ function renderJob(job) {
   if(job.state==='complete'){
     let link=$('#live-article');
     if(!link){link=document.createElement('a');link.id='live-article';link.target='_blank';link.rel='noopener noreferrer';$('#job').append(document.createElement('br'),link);}
-    link.href=job.result.url;link.textContent=t('openLive');
+    link.href=job.result.url;link.textContent=job.result.kind==='deletion'?(ui==='en'?'Open live blog ↗':'打开正式博客 ↗'):t('openLive');
   }
   if(job.state!==lastJobState){
     lastJobState=job.state;
@@ -218,7 +228,7 @@ function renderJob(job) {
 }
 window.addEventListener('beforeunload',event=>{if(dirty||working){event.preventDefault();event.returnValue='';}});
 try {
-  const state=await api('state');articles=state.articles;previewOrigin=state.preview;translator.update(state.translation);selectArticle(articles[0]??null);applyLanguage();renderJob(state.job);
+  const state=await api('state');articles=state.articles;previewOrigin=state.preview;translator.update(state.translation);deletions.update(state);selectArticle(articles[0]??null);applyLanguage();renderJob(state.job);
   let lastPreviewError='';
-  setInterval(async()=>{try{const state=await api('state');previewOrigin=state.preview;translator.update(state.translation);refreshState();renderJob(state.job);if(state.previewError&&state.previewError!==lastPreviewError){lastPreviewError=state.previewError;message(state.previewError,true);}}catch{/* Keep form intact if terminal closes. */}},2500);
+  setInterval(async()=>{try{const state=await api('state');previewOrigin=state.preview;translator.update(state.translation);deletions.update(state);refreshState();renderJob(state.job);if(state.previewError&&state.previewError!==lastPreviewError){lastPreviewError=state.previewError;message(state.previewError,true);}}catch{/* Keep form intact if terminal closes. */}},2500);
 } catch(error) {message(error.message,true);}

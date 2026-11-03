@@ -29,7 +29,7 @@ export function command(root, executable, args, onLog = () => {}) {
   });
 }
 const git = (root, ...args) => command(root, 'git', args);
-export async function repositoryReady(root) {
+export async function repositoryReady(root, allowedDeletions = []) {
   const remote = await git(root, 'remote', 'get-url', 'origin');
   if (!/^(https:\/\/github\.com\/|git@github\.com:)flandolusukalate\/Flandolusukalate\.github\.io(?:\.git)?$/i.test(remote)) throw new Error('Origin must be the Flandolu Space repository.');
   if (await git(root, 'branch', '--show-current') !== 'main') throw new Error('Publishing requires the main branch. Save locally and finish any code work first.');
@@ -37,7 +37,7 @@ export async function repositoryReady(root) {
   const changed = await git(root, 'status', '--porcelain=v1', '-z', '--untracked-files=all');
   for (const record of changed.split('\0').filter(Boolean)) {
     const file = record.slice(3);
-    if (!/^(src\/content\/blog\/|public\/uploads\/)/.test(file) || record.slice(0,2).includes('D') || record.slice(0,2).includes('R')) throw new Error('Finish other code changes/deletions before publishing articles.');
+    if (!/^(src\/content\/blog\/|public\/uploads\/)/.test(file) || (record.slice(0,2).includes('D') && !allowedDeletions.includes(file)) || record.slice(0,2).includes('R')) throw new Error('Finish other code changes/deletions before publishing articles.');
   }
   return git(root, 'rev-parse', 'HEAD');
 }
@@ -67,9 +67,7 @@ export async function reviewPublication(root, id) {
   if (!diff && !pending && !(await git(root, 'status', '--porcelain', '--', ...assets))) throw new Error('No local changes to publish.');
   return { head, id: { slug: article.slug, lang: article.lang }, title: article.data.title, files, hashes, gitHashes, diff, pending };
 }
-export async function publishArticle(root, review, onLog, run = command) {
-  const fresh = await reviewPublication(root, review.id);
-  if (fresh.head !== review.head || JSON.stringify(fresh.hashes) !== JSON.stringify(review.hashes)) throw new Error('Files changed after review. Review the changes again.');
+export async function preparePublication(root, onLog, run = command) {
   await run(root, 'git', ['fetch', 'origin', 'main'], onLog);
   const ancestor = await git(root, 'merge-base', 'HEAD', 'origin/main');
   if (ancestor !== await git(root, 'rev-parse', 'origin/main')) throw new Error('GitHub has newer changes. Pull them before publishing; nothing was overwritten.');
@@ -77,6 +75,11 @@ export async function publishArticle(root, review, onLog, run = command) {
   await run(root, process.execPath, [packageBin('astro'), 'check'], onLog);
   await run(root, process.execPath, [packageBin('astro'), 'build'], onLog);
   await run(root, process.execPath, [packageBin('pagefind'), '--site', 'dist'], onLog);
+}
+export async function publishArticle(root, review, onLog, run = command) {
+  const fresh = await reviewPublication(root, review.id);
+  if (fresh.head !== review.head || JSON.stringify(fresh.hashes) !== JSON.stringify(review.hashes)) throw new Error('Files changed after review. Review the changes again.');
+  await preparePublication(root, onLog, run);
   const checked = await reviewPublication(root, review.id);
   if (checked.head !== review.head || JSON.stringify(checked.hashes) !== JSON.stringify(review.hashes)) throw new Error('Files changed during the build. Review again.');
   await git(root, 'add', '--', ...review.files);

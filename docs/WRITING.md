@@ -31,6 +31,20 @@ npm run editor
 需要在 `main` 分支上发布，且不能存在其他已暂存文件、未完成的代码修改或远程新提交。
 草稿不会进入正式页面、归档、RSS、搜索索引和 sitemap；但如果手动把草稿源码提交到公开 GitHub 仓库，任何人都能读取源码。
 
+## 删除与恢复文章
+
+1. 选中已保存的文章，在右侧设置区点击「删除文章」。有未保存修改时，先保存再操作。
+2. 核对弹窗中的文章标题和文件清单。删除中文时，可勾选「同时删除英文版」，默认不勾选；删除英文时只删除英文，保留中文。
+3. 点击「确认删除」。文章从本地书架移除，图片保留，完整源码副本保存在被 Git 忽略的 `.local-editor/deletions/`。
+4. 在编辑区下方「已删除的文章」中可点击「恢复到书架」。恢复不会覆盖同名的不同文章，也不会自动上传。
+5. 已提交过 Git 的文章需点击「发布删除」，核对清单后「构建并发布到 GitHub」。通过检查、构建、推送与 GitHub 部署后，正式网站才移除文章。仅本地新建、从未提交过的文章无需发布删除。
+
+一次处理一组待发布删除：先发布或恢复当前删除，再删除其他文章。待发布删除的同名文章不能新建覆盖。
+发布失败时保留恢复副本；如果提交已经创建但推送失败，先重试「发布删除」，完成推送后再恢复。
+已发布删除的文章也可恢复到本地，重新上线需按正常文章发布流程操作。删除不会抹除 Git 历史，也不会删除共享图片。
+
+升级编辑器功能后，先保存表单，关闭旧启动窗口，再双击 `Start-Writing.cmd`，刷新编辑器页面。
+
 ## 中英版本
 
 点击「编辑另一语言」可打开对应译文；没有译文时会生成同名文章的新表单。
@@ -90,7 +104,7 @@ API Key 使用 Windows 当前账户的 DPAPI 加密，保存到 `%APPDATA%/Fland
   如果已经继续修改该文章，请先在终端运行 `git push origin main` 推送上次提交，再发布新改动。新改动会保留在工作区。
 - **预览端口被占用：** 关闭占用该端口的预览进程，或在 PowerShell 设置 `$env:PREVIEW_PORT='4323'` 后运行 `npm run editor`。
   编辑器端口可用 `$env:EDITOR_PORT='4312'` 修改。预览启动失败时链接会禁用，并显示错误。
-- **手工撤下文章：** 将 `draft` 改为 `true` 后，手动提交该文件并正常推送。当前表单发布按钮用于发布非草稿；不提供删除、重命名或撤下按钮。
+- **手工撤下文章：** 将 `draft` 改为 `true` 后，手动提交该文件并正常推送。也可使用「删除文章」及「发布删除」移除文章。当前不提供重命名或单独撤下按钮。
 
 ## English quick start
 
@@ -134,6 +148,20 @@ The editor never force-pushes. If a push fails after committing, retry the uncha
 article after fixing connectivity. If you edited again, run `git push origin main`
 first, then publish the newer changes.
 
+To delete, select a saved article and choose **Delete article** in its settings.
+Review the title and file list. For Chinese articles, **Also delete the English version**
+is optional and unchecked by default; deleting English keeps Chinese. Confirming removes
+the selected files locally and keeps recoverable backups in the Git-ignored
+`.local-editor/deletions/` folder. Shared images are kept.
+Under **Deleted articles**, choose **Restore to library** or **Publish deletion**.
+Publishing checks, builds and pushes only the listed deletions; the live site changes after
+GitHub deployment. Untracked local articles need no deletion publication. Finish or restore
+one pending deletion before starting another, and do not reuse its slug until resolved.
+If a commit succeeded but pushing failed, retry **Publish deletion** before restoring.
+Restoring an already published deletion stays local until you publish the article again.
+After upgrading the editor, save your form, close its old terminal, restart
+**Start-Writing.cmd**, then reload the editor.
+
 Images: PNG, JPEG, GIF or WebP, up to 8 MB. Uploads remain local until referenced by a
-published article. No automatic deletion, renaming, unpublishing, or cloud CMS is included.
+published article. No automatic image deletion, renaming, separate unpublishing, or cloud CMS is included.
 For a port conflict, set `EDITOR_PORT` or `PREVIEW_PORT` before starting the editor.
