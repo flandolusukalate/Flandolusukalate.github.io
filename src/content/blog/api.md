@@ -48,6 +48,9 @@ https://github.com/farion1231/cc-switch/releases#release-v4.0.25
 ## 二、注册账号与获取额度
 
 1. **注册**：打开清湘 API 注册页面，填写邮箱与密码完成注册；已有账号可直接登录。
+```
+https://api.luowanqingxiang.xyz/v1/portal/register
+```
 2. **初始化额度**：新账户默认初始状态为：
    - **账户余额**：`0`
    - **并发上限**：`1`
