@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { Github, Sparkles } from 'lucide-astro';
+---
+<BaseLayout title="About · 关于我" description="关于 Flandolu、这个个人空间以及持续探索的兴趣。">
+  <section class="page-hero">
+    <div class="container page-hero-content">
+      <span class="section-eyebrow">Who I am · What I make</span>
+      <h1>About</h1>
+      <p>写一些代码，保存一些灵感，慢慢构筑属于自己的世界。</p>
+    </div>
+  </section>
+  <section class="container section">
+    <div class="about-grid">
+      <aside class="profile-panel">
+        <div class="profile-art" role="img" aria-label="银白发紫眸龙娘在梦幻书房中的插画"></div>
+        <div class="profile-body">
+          <h2>✧ Flandolu ✧</h2>
+          <p>Developer · Learner · Dreamer</p>
+          <div class="profile-social"><a href="https://github.com/flandolusukalate" target="_blank" rel="noopener noreferrer"><Github size={16} style="display:inline"/> GitHub</a><a href="/rss.xml">RSS 订阅</a></div>
+        </div>
+      </aside>
+      <div>
+        <section class="about-section">
+          <span class="section-eyebrow">Nice to meet you</span>
+          <h2>你好，欢迎来到我的小世界。<Sparkles size={21} style="display:inline;color:var(--gold)"/></h2>
+          <p>我是 Flandolu，喜欢探索编程、软件与数字创作。这个网站既是技术笔记本，也是一间可以收纳生活与想法的私人书房。</p>
+          <p>比起展示一个完美无缺的履历，我更希望把探索的过程、实际遇到的问题和逐渐成长的作品记录下来。</p>
+        </section>
+        <section class="about-section">
+          <span class="section-eyebrow">Interests</span>
+          <h2>正在探索的领域</h2>
+          <div class="tag-list">
+            {['Python', 'Web Development', '开源项目', 'UI 设计', '数字创作', '效率工具', 'AI 应用'].map(tag => <span class="tag">{tag}</span>)}
+          </div>
+        </section>
+        <section class="about-section">
+          <span class="section-eyebrow">A little timeline</span>
+          <h2>成长与记录</h2>
+          <div class="timeline">
+            <div class="timeline-item"><strong>2026 · Flandolu's Space</strong><p>开始筹备这座梦幻数字书房，整理自己的技术笔记和项目构想。</p></div>
+            <div class="timeline-item"><strong>持续进行中</strong><p>学习、尝试、记录，让每一个小想法都有生长的机会。</p></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

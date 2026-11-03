@@ -1,0 +1,69 @@
+---
+import { Search, Moon, Sun, Menu, X, Github } from 'lucide-astro';
+const pathname = Astro.url.pathname;
+const links = [
+  { href: '/', label: 'Home', title: '首页' },
+  { href: '/blog/', label: 'Blog', title: '文章' },
+  { href: '/projects/', label: 'Projects', title: '项目' },
+  { href: '/moments/', label: 'Moments', title: '动态' },
+  { href: '/about/', label: 'About', title: '关于' },
+];
+---
+<a class="skip-link" href="#main-content">跳到正文</a>
+<header class="site-header">
+  <div class="nav-shell">
+    <a class="brand" href="/" aria-label="Flandolu's Space 首页">
+      <span class="brand-star" aria-hidden="true">✦</span>
+      <span>Flandolu’s Space</span>
+    </a>
+    <nav class="desktop-nav" aria-label="主导航">
+      {links.map(link => (
+        <a href={link.href} aria-current={pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)) ? 'page' : undefined} title={link.title}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+    <div class="header-tools">
+      <a class="icon-button" href="/search/" aria-label="搜索文章"><Search size={19} strokeWidth={2.2}/></a>
+      <button class="icon-button theme-toggle" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+        <Moon class="moon-icon" size={20}/>
+        <Sun class="sun-icon" size={20}/>
+      </button>
+      <a class="icon-button github-button" href="https://github.com/flandolusukalate" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><Github size={19}/></a>
+      <button class="icon-button mobile-toggle" type="button" aria-label="展开导航" aria-expanded="false" aria-controls="mobile-menu"><Menu class="menu-icon" size={21}/><X class="close-icon" size={21}/></button>
+    </div>
+  </div>
+  <nav class="mobile-menu" id="mobile-menu" aria-label="移动端导航" hidden>
+    {links.map(link => <a href={link.href} aria-current={pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)) ? 'page' : undefined}>{link.label}<span>{link.title}</span></a>)}
+    <a href="/archive/">Archive <span>归档</span></a>
+  </nav>
+</header>
+<script>
+  const setupHeader = () => {
+    const header = document.querySelector<HTMLElement>('.site-header');
+    if (!header || header.dataset.bound === 'true') return;
+    header.dataset.bound = 'true';
+    const themeButton = document.querySelector<HTMLButtonElement>('.theme-toggle');
+    const menuButton = document.querySelector<HTMLButtonElement>('.mobile-toggle');
+    const menu = document.querySelector<HTMLElement>('.mobile-menu');
+    themeButton?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('flandolu-theme', next); } catch {}
+    });
+    menuButton?.addEventListener('click', () => {
+      const open = menu?.hidden ?? true;
+      if (menu) menu.hidden = !open;
+      menuButton.setAttribute('aria-expanded', String(open));
+      menuButton.setAttribute('aria-label', open ? '关闭导航' : '展开导航');
+      document.body.classList.toggle('menu-open', open);
+    });
+    menu?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      menu.hidden = true;
+      menuButton?.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('menu-open');
+    }));
+  };
+  document.addEventListener('astro:page-load', setupHeader);
+  setupHeader();
+</script>

@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ArrowLeft, Search } from 'lucide-astro';
+---
+<BaseLayout title="404 · 页面走丢了">
+  <section class="container section" style="text-align:center;min-height:62vh;display:grid;place-items:center">
+    <div>
+      <div style="font:italic 700 clamp(90px,17vw,180px) Georgia,serif;color:var(--purple);line-height:1">404</div>
+      <h1 style="font-size:26px;margin:12px 0">这页书似乎被星光藏起来了 ✦</h1>
+      <p style="color:var(--text-muted);margin-bottom:26px">也许它移动了位置，或者暂时还没有写完。</p>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap"><a class="btn btn-primary" href="/"><ArrowLeft size={16}/> 返回首页</a><a class="btn btn-secondary" href="/search/"><Search size={16}/> 搜索内容</a></div>
+    </div>
+  </section>
+</BaseLayout>

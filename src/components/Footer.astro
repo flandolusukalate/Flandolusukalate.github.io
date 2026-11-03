@@ -1,0 +1,22 @@
+---
+import { Github, Rss, ArrowUpRight } from 'lucide-astro';
+---
+<footer class="site-footer">
+  <div class="footer-stars" aria-hidden="true">✧　⋆　✦　⋆　✧</div>
+  <div class="container footer-content">
+    <div>
+      <a href="/" class="footer-brand">✦ Flandolu's Space</a>
+      <p>在代码与幻想之间，记录属于自己的世界。</p>
+    </div>
+    <div class="footer-links">
+      <a href="/archive/">文章归档</a>
+      <a href="/about/">关于我</a>
+      <a href="/rss.xml" aria-label="RSS"><Rss size={16}/> RSS</a>
+      <a href="https://github.com/flandolusukalate" target="_blank" rel="noopener noreferrer"><Github size={16}/> GitHub <ArrowUpRight size={13}/></a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© {new Date().getFullYear()} Flandolu · Made with imagination and code</span>
+    <span>Astro × GitHub Pages · ✧</span>
+  </div>
+</footer>

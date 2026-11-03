@@ -1,0 +1,84 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+import { site } from '../config';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+const {
+  title = site.title,
+  description = site.description,
+  image = '/illustrations/magic-book-library.webp',
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = new URL(image, Astro.site);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#FAF9FF" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title="Flandolu's Space RSS" href="/rss.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={imageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{title === site.title ? title : `${title} | ${site.title}`}</title>
+    <ClientRouter />
+    <script is:inline>
+      (() => {
+        try {
+          const pref = localStorage.getItem('flandolu-theme') || 'auto';
+          const dark = pref === 'dark' || (pref === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+      document.addEventListener('astro:before-swap', (event) => {
+        event.newDocument.documentElement.dataset.theme = document.documentElement.dataset.theme || 'light';
+      });
+    </script>
+  </head>
+  <body>
+    <div class="global-orbit orbit-one" aria-hidden="true"></div>
+    <div class="global-orbit orbit-two" aria-hidden="true"></div>
+    <Header />
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      let cleanupScroll = () => {};
+      const setupScroll = () => {
+        cleanupScroll();
+        const progress = document.querySelector<HTMLElement>('[data-reading-progress]');
+        if (!progress) return;
+        const update = () => {
+          const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+          const percent = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+          progress.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+        };
+        window.addEventListener('scroll', update, { passive: true });
+        cleanupScroll = () => window.removeEventListener('scroll', update);
+        update();
+      };
+      document.addEventListener('astro:page-load', setupScroll);
+      setupScroll();
+    </script>
+  </body>
+</html>

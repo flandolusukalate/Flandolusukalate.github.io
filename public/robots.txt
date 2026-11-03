@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://flandolusukalate.github.io/sitemap-index.xml

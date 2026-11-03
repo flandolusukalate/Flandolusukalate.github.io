@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, formatDate } from '../lib/content';
+const posts = await getPosts();
+const years = [...new Set(posts.map(post => post.data.pubDate.getFullYear()))];
+---
+<BaseLayout title="Archive · 归档">
+  <section class="page-hero"><div class="container page-hero-content"><span class="section-eyebrow">Through the seasons</span><h1>Archive</h1><p>沿着时间的轨迹，翻阅写下的每一页。</p></div></section>
+  <section class="container section">
+    <div class="archive-years">
+      {years.map(year => <section class="archive-year"><h2>{year} ✧</h2>{posts.filter(p=>p.data.pubDate.getFullYear()===year).map(post=><div class="archive-row"><a href={`/blog/${post.id}/`}>{post.data.title}</a><time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time></div>)}</section>)}
+    </div>
+  </section>
+</BaseLayout>

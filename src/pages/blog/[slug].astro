@@ -1,0 +1,70 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import { CalendarDays, Clock3, UserRound, ArrowLeft, ArrowRight, List } from 'lucide-astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, formatDate, readingTime } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map(post => ({ params: { slug: post.id }, props: { post } }));
+}
+interface Props { post: CollectionEntry<'blog'>; }
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+const posts = await getPosts();
+const position = posts.findIndex(p => p.id === post.id);
+const older = posts[position + 1];
+const newer = posts[position - 1];
+const cover = post.data.cover || '/illustrations/magic-book-library.webp';
+---
+<BaseLayout title={post.data.title} description={post.data.description} image={cover}>
+  <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
+  <article class="container article-shell">
+    <header class="article-top">
+      <div class="tag-list" style="justify-content:center" data-pagefind-body>
+        <span class="tag">{post.data.category}</span>
+        {post.data.tags.slice(0, 2).map(tag => <span class="tag">#{tag}</span>)}
+      </div>
+      <h1 data-pagefind-body data-pagefind-meta="title">{post.data.title}</h1>
+      <p class="article-summary" data-pagefind-body>{post.data.description}</p>
+      <div class="article-meta">
+        <span><UserRound size={15}/> Flandolu</span>
+        <span><CalendarDays size={15}/> <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time></span>
+        <span><Clock3 size={15}/> {readingTime(post.body)} 分钟阅读</span>
+      </div>
+    </header>
+    <div class="article-cover"><img src={cover} alt="文章封面"/></div>
+    <div class="article-layout">
+      <div class="article-main">
+        {headings.length > 0 && (
+          <details class="toc-mobile">
+            <summary>文章目录</summary>
+            <nav aria-label="移动端文章目录">
+              {headings.filter(h=>h.depth===2||h.depth===3).map(h => <a href={`#${h.slug}`}>{h.text}</a>)}
+            </nav>
+          </details>
+        )}
+        <div class="prose" data-pagefind-body><Content/></div>
+        <footer class="article-end">
+          <div class="tag-list" data-pagefind-body>{post.data.tags.map(tag => <a class="tag" href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>)}</div>
+          <div class="article-nav">
+            {older ? <a href={`/blog/${older.id}/`}><ArrowLeft size={15} style="display:inline"/> 上一篇：{older.data.title}</a> : <span></span>}
+            {newer && <a href={`/blog/${newer.id}/`}>下一篇：{newer.data.title} <ArrowRight size={15} style="display:inline"/></a>}
+          </div>
+          <div class="comment-placeholder">
+            <h3>✧ 留言角落</h3>
+            <p>评论区将通过 GitHub Discussions 接入。现在也可以前往 <a href="https://github.com/flandolusukalate" target="_blank" rel="noopener noreferrer">我的 GitHub</a> 交流。</p>
+          </div>
+        </footer>
+      </div>
+      {headings.length > 0 && (
+        <aside class="article-toc">
+          <h2><List size={18} style="display:inline"/> Table of Contents</h2>
+          <nav aria-label="文章目录">
+            {headings.filter(h=>h.depth===2||h.depth===3).map(h => <a class={`toc-depth-${h.depth}`} href={`#${h.slug}`}>{h.text}</a>)}
+          </nav>
+        </aside>
+      )}
+    </div>
+  </article>
+</BaseLayout>
