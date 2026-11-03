@@ -3,38 +3,26 @@ import { localeFromPath, localizedPath, translator } from "../lib/i18n";
 
 const locale = localeFromPath(Astro.url.pathname);
 const t = translator(locale);
-import { ArrowRight, BookOpen, Sparkles, Code2, Feather } from 'lucide-astro';
+import { ArrowRight, Feather } from 'lucide-astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StudyOpening from '../components/StudyOpening.astro';
 import PostCard from '../components/PostCard.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import { getPosts, getProjects, getMoments } from '../lib/content';
 const [posts, projects, moments] = await Promise.all([getPosts(locale), getProjects(locale), getMoments(locale)]);
 ---
 <BaseLayout>
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-art"><img src="/illustrations/dragon-library-hero.webp" alt="" fetchpriority="high" /></div>
-    <div class="container hero-inner">
-      <div class="hero-copy">
-        <span class="eyebrow-badge"><Sparkles size={14}/> Welcome to my little world</span>
-        <h1 class="hero-title" id="hero-title">Hello, I'm <span>Flandolu.</span></h1>
-        <p class="hero-subtitle serif">Code, stories &amp; imagination</p>
-        <p class="hero-description">{t("你好，欢迎来到我的数字书房。这里收藏着代码、灵感、正在进行的创作，以及那些值得记录的小小瞬间。")}</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href={localizedPath("/blog/", locale)}><BookOpen size={18}/> {t("探索博客")} <ArrowRight size={17}/></a>
-          <a class="btn btn-secondary" href={localizedPath("/projects/", locale)}><Code2 size={18}/> {t("我的作品")}</a>
-        </div>
-      </div>
-    </div>
-    <span class="hero-scroll">Scroll to explore</span>
-  </section>
+  <StudyOpening />
 
-  <section class="container section">
-    <div class="section-top">
-      <div><span class="section-eyebrow">From my notebook</span><h2 class="section-title">Latest Posts</h2><p class="section-subtitle">{t("最近写下的技术笔记与灵感。")}</p></div>
-      <a class="more-link" href={localizedPath("/blog/", locale)}>{t("全部文章")} <ArrowRight size={17}/></a>
-    </div>
-    <div class="posts-grid">
-      {posts.slice(0, 3).map(post => <PostCard post={post}/>)}
+  <section class="home-notebook section" id="latest-posts" aria-labelledby="latest-posts-title">
+    <div class="container">
+      <div class="section-top">
+        <div><span class="section-eyebrow">From my notebook</span><h2 class="section-title" id="latest-posts-title">Latest Posts</h2><p class="section-subtitle">{t("最近写下的技术笔记与灵感。")}</p></div>
+        <a class="more-link" href={localizedPath("/blog/", locale)}>{t("全部文章")} <ArrowRight size={17}/></a>
+      </div>
+      <div class="posts-grid">
+        {posts.slice(0, 3).map(post => <PostCard post={post}/>)}
+      </div>
     </div>
   </section>
 
@@ -73,3 +61,21 @@ const [posts, projects, moments] = await Promise.all([getPosts(locale), getProje
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .home-notebook {
+    position: relative;
+    z-index: 1;
+    padding-top: 56px;
+    border-radius: 28px 28px 0 0;
+    background: var(--bg);
+    scroll-margin-top: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    /* Astro may insert the component's module script between these two sections. */
+    :global(study-opening[data-motion='full']) ~ .home-notebook { margin-top: -68px; }
+  }
+  @media (max-width: 600px) {
+    .home-notebook { padding-top: 40px; border-radius: 20px 20px 0 0; }
+  }
+</style>

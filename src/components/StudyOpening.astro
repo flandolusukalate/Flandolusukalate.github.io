@@ -1,0 +1,251 @@
+---
+import { ArrowDown, ArrowRight, BookOpen, Code2, Sparkles } from 'lucide-astro';
+import { localeFromPath, localizedPath, translator } from '../lib/i18n';
+
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
+---
+
+<study-opening>
+  <section class="opening-stage" aria-labelledby="hero-title">
+    <div class="hero">
+      <div class="hero-art">
+        <img src="/illustrations/dragon-library-hero.webp" alt="" width="1672" height="941" fetchpriority="high" />
+      </div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <span class="eyebrow-badge"><Sparkles size={14}/> Welcome to my little world</span>
+          <h1 class="hero-title" id="hero-title">Hello, I'm <span>Flandolu.</span></h1>
+          <p class="hero-subtitle serif">Code, stories &amp; imagination</p>
+          <p class="hero-description">{t('你好，欢迎来到我的数字书房。这里收藏着代码、灵感、正在进行的创作，以及那些值得记录的小小瞬间。')}</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href={localizedPath('/blog/', locale)}><BookOpen size={18}/> {t('探索博客')} <ArrowRight size={17}/></a>
+            <a class="btn btn-secondary" href={localizedPath('/projects/', locale)}><Code2 size={18}/> {t('我的作品')}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="opening-scroll" href="#latest-posts">
+      <span>{locale === 'en' ? 'Turn to the notebook' : '向下翻阅 · 书房里的笔记'}</span>
+      <ArrowDown size={16} aria-hidden="true" />
+    </a>
+  </section>
+</study-opening>
+
+<style>
+  study-opening {
+    --opening-progress: 0;
+    --frame-inset: clamp(32px, 7.5vw, 144px);
+    --frame-radius: 28px;
+    --stage-height: clamp(520px, calc(100svh - 109px), 1000px);
+    --copy-travel: -36px;
+    --image-zoom: .045;
+    display: block;
+    position: relative;
+    margin-top: 18px;
+  }
+
+  .opening-stage {
+    position: relative;
+    height: var(--stage-height);
+  }
+
+  .hero {
+    position: absolute;
+    inset: 0 0 36px;
+    isolation: isolate;
+    overflow: clip;
+    background: var(--bg-soft);
+    clip-path: inset(0 var(--frame-inset) round var(--frame-radius));
+  }
+
+  .hero-art { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+  .hero-art img { width: 100%; height: 100%; object-fit: cover; object-position: 65% center; }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(250,249,255,.97) 0%, rgba(250,249,255,.9) 35%, rgba(250,249,255,.7) 48%, rgba(250,249,255,.07) 68%, transparent 85%);
+  }
+  :global([data-theme='dark']) .hero::before {
+    background: linear-gradient(90deg, rgba(23,22,38,.97), rgba(23,22,38,.87) 32%, rgba(23,22,38,.25) 72%, rgba(23,22,38,.12));
+  }
+
+  .hero-inner {
+    position: relative;
+    height: 100%;
+    width: min(1120px, calc(100% - 2 * var(--frame-inset) - 80px));
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    padding-block: 32px;
+  }
+  .hero-copy { width: min(550px, 58%); }
+  .hero-title {
+    margin: 20px 0 14px;
+    font: italic 700 clamp(52px, 6.3vw, 94px)/1 Georgia, serif;
+    color: #5b3c75;
+    letter-spacing: -.035em;
+    text-wrap: balance;
+  }
+  .hero-title span { display: block; font-style: normal; }
+  .hero-subtitle { color: #735985; font: italic 25px Georgia, serif; margin-bottom: 20px; }
+  .hero-description { color: #655e73; max-width: 490px; line-height: 1.85; font-size: 15px; }
+  :global([data-theme='dark']) .hero-title { color: #f3eaff; }
+  :global([data-theme='dark']) .hero-subtitle { color: #dfcef0; }
+  :global([data-theme='dark']) .hero-description { color: #e0d8ed; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 27px; }
+  .opening-scroll {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 16px;
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: .12em;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+  .opening-scroll:hover { color: var(--purple-dark); }
+
+  /* The same illustrated window opens out; the notebook then enters in normal flow. */
+  @media (prefers-reduced-motion: no-preference) {
+    study-opening[data-motion] .hero {
+      clip-path: inset(0 calc(var(--frame-inset) * (1 - var(--opening-progress))) round calc(var(--frame-radius) * (1 - var(--opening-progress))));
+    }
+    study-opening[data-motion] .hero-art img {
+      transform: scale(calc(1 + var(--image-zoom) * var(--opening-progress)));
+    }
+    study-opening[data-motion] .hero-copy {
+      transform: translateY(calc(var(--copy-travel) * var(--opening-progress)));
+    }
+    study-opening[data-motion='full'] { height: calc(var(--stage-height) + 68svh); }
+    study-opening[data-motion='full'] .opening-stage { position: sticky; top: 94px; }
+    study-opening[data-motion='full'] .opening-scroll {
+      bottom: 76px;
+      left: calc(var(--frame-inset) + 24px);
+      transform: none;
+    }
+  }
+
+  @media (min-width: 901px) and (max-height: 740px) {
+    .hero-title { font-size: clamp(52px, 5.6vw, 78px); margin-top: 16px; }
+    .hero-subtitle { font-size: 22px; margin-bottom: 16px; }
+    .hero-description { font-size: 14px; }
+    .hero-actions { margin-top: 22px; }
+  }
+
+  @media (max-width: 900px) {
+    study-opening {
+      --frame-inset: 20px;
+      --frame-radius: 22px;
+      --copy-travel: -12px;
+      --image-zoom: .02;
+    }
+    .hero-inner { width: calc(100% - 96px); }
+    .hero-copy { width: 62%; }
+    .hero-title { font-size: clamp(49px, 7vw, 72px); }
+    .hero-subtitle { font-size: 21px; }
+  }
+
+  @media (max-width: 600px) {
+    study-opening { --frame-inset: 12px; --frame-radius: 20px; --stage-height: 760px; margin-top: 14px; }
+    .hero-inner { width: calc(100% - 64px); align-items: flex-start; padding-top: 32px; }
+    .hero-copy { width: 100%; }
+    .hero-title { font-size: clamp(47px, 12.5vw, 68px); margin-top: 15px; }
+    .hero-subtitle { font-size: 20px; }
+    .hero-description { font-size: 13px; max-width: 340px; }
+    .hero-actions { gap: 10px; margin-top: 20px; }
+    .hero-art {
+      inset: auto 0 0;
+      height: 55%;
+      mask-image: linear-gradient(to bottom, transparent, #000 24%);
+    }
+    .hero-art img { object-position: 73% center; }
+    .hero::before {
+      background: linear-gradient(180deg, rgba(250,249,255,.98) 0%, rgba(250,249,255,.94) 34%, rgba(250,249,255,.28) 58%, transparent 78%);
+    }
+    :global([data-theme='dark']) .hero::before {
+      background: linear-gradient(180deg, rgba(23,22,38,.98) 0%, rgba(23,22,38,.93) 34%, rgba(23,22,38,.3) 64%, rgba(23,22,38,.12));
+    }
+  }
+
+  @media (max-width: 360px) {
+    study-opening { --stage-height: 810px; }
+    .hero-inner { width: calc(100% - 56px); }
+    .hero-title { font-size: 44px; }
+    .hero-actions :global(.btn) { padding-inline: 13px; gap: 7px; }
+  }
+</style>
+
+<script>
+  class StudyOpening extends HTMLElement {
+    private dispose?: () => void;
+
+    connectedCallback() {
+      const stage = this.querySelector<HTMLElement>('.opening-stage');
+      if (!stage) return;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+      const desktop = matchMedia('(min-width: 901px) and (min-height: 700px)');
+      let frame = 0;
+      let range = 1;
+      let stickyTop = 0;
+      let previous = -1;
+
+      const draw = () => {
+        frame = 0;
+        if (reduced.matches) return;
+        const top = this.getBoundingClientRect().top;
+        const progress = Math.max(0, Math.min(1, (stickyTop - top) / range));
+        if (progress === previous) return;
+        this.style.setProperty('--opening-progress', progress.toFixed(4));
+        previous = progress;
+      };
+      const schedule = () => {
+        if (!frame && !reduced.matches) frame = requestAnimationFrame(draw);
+      };
+      const measure = () => {
+        const full = desktop.matches && !reduced.matches;
+        if (reduced.matches) {
+          delete this.dataset.motion;
+          this.style.removeProperty('--opening-progress');
+        } else {
+          this.dataset.motion = full ? 'full' : 'compact';
+        }
+        stickyTop = full ? parseFloat(getComputedStyle(stage).top) || 0 : 0;
+        range = full ? Math.max(1, this.offsetHeight - stage.offsetHeight) : stage.offsetHeight * .65;
+        previous = -1;
+        schedule();
+      };
+
+      const resize = new ResizeObserver(measure);
+      resize.observe(stage);
+      window.addEventListener('scroll', schedule, { passive: true });
+      window.addEventListener('pageshow', measure);
+      reduced.addEventListener('change', measure);
+      desktop.addEventListener('change', measure);
+      measure();
+
+      // Astro replaces the element during client navigation; never retain old scroll listeners.
+      this.dispose = () => {
+        cancelAnimationFrame(frame);
+        resize.disconnect();
+        window.removeEventListener('scroll', schedule);
+        window.removeEventListener('pageshow', measure);
+        reduced.removeEventListener('change', measure);
+        desktop.removeEventListener('change', measure);
+      };
+    }
+
+    disconnectedCallback() { this.dispose?.(); }
+  }
+
+  if (!customElements.get('study-opening')) customElements.define('study-opening', StudyOpening);
+</script>
