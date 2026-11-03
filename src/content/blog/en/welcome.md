@@ -1,15 +1,18 @@
 ---
 lang: en
 title: "Welcome to Flandolu's Space"
-description: "Creating a digital study between code and fantasy, a place to keep records and make gradual improvements over time."
+description: "A digital study between code and imagination, built for keeping
+  notes and growing over time."
 pubDate: 2026-11-03
 category: "Site Announcements"
-tags: ["Personal Blog", "Astro", "Digital Garden"]
+tags:
+  - Personal Blog
+  - Astro
+  - Digital Garden
 cover: "/illustrations/magic-book-library.webp"
 featured: true
 draft: false
 ---
-
 > This is a sample welcome post for the website's launch. It can later be revised to reflect personal experiences, or kept as the first entry on this site.
 
 ## Hello, and welcome
