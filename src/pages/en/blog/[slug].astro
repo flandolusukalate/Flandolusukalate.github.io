@@ -1,0 +1,8 @@
+---
+import Page from "../../../views/blog/[slug].astro";
+import { getPosts, slugOf } from "../../../lib/content";
+export async function getStaticPaths() {
+  return (await getPosts("en")).map(post => ({params:{slug:slugOf(post)},props:{post}}));
+}
+---
+<Page {...Astro.props} />

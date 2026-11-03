@@ -1,5 +1,10 @@
 ---
 import { Search, Moon, Sun, Menu, X, Github } from 'lucide-astro';
+import { localeFromPath, localizedPath, basePath, translator } from '../lib/i18n';
+interface Props { alternatePath: string | null; }
+const { alternatePath } = Astro.props;
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
 const pathname = Astro.url.pathname;
 const links = [
   { href: '/', label: 'Home', title: '首页' },
@@ -9,37 +14,41 @@ const links = [
   { href: '/about/', label: 'About', title: '关于' },
 ];
 ---
-<a class="skip-link" href="#main-content">跳到正文</a>
+<a class="skip-link" href="#main-content">{t('跳到正文')}</a>
 <header class="site-header">
   <div class="nav-shell">
-    <a class="brand" href="/" aria-label="Flandolu's Space 首页">
+    <a class="brand" href={localizedPath('/', locale)} aria-label={locale === 'en' ? "Flandolu's Space home" : "Flandolu's Space 首页"}>
       <span class="brand-star" aria-hidden="true">✦</span>
       <span>Flandolu’s Space</span>
     </a>
-    <nav class="desktop-nav" aria-label="主导航">
+    <nav class="desktop-nav" aria-label={t('主导航')}>
       {links.map(link => (
-        <a href={link.href} aria-current={pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)) ? 'page' : undefined} title={link.title}>
+        <a href={localizedPath(link.href, locale)} aria-current={basePath(pathname) === link.href || (link.href !== '/' && basePath(pathname).startsWith(link.href)) ? 'page' : undefined} title={t(link.title)}>
           {link.label}
         </a>
       ))}
     </nav>
     <div class="header-tools">
-      <a class="icon-button" href="/search/" aria-label="搜索文章"><Search size={19} strokeWidth={2.2}/></a>
-      <button class="icon-button theme-toggle" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+      {alternatePath ? <a class="language-switch" href={alternatePath} lang={locale === 'en' ? 'zh-CN' : 'en'} hreflang={locale === 'en' ? 'zh-CN' : 'en'} data-astro-reload aria-label={locale === 'en' ? '切换到中文' : 'Switch to English'}>{locale === 'en' ? '中文' : 'EN'}</a> : <span class="language-switch unavailable" title={t('暂无译文')}>{locale === 'en' ? '中文' : 'EN'}</span>}
+      <a class="icon-button" href={localizedPath('/search/', locale)} aria-label={t('搜索文章')}><Search size={19} strokeWidth={2.2}/></a>
+      <button class="icon-button theme-toggle" type="button" aria-label={t('切换明暗主题')} title={t('切换明暗主题')}>
         <Moon class="moon-icon" size={20}/>
         <Sun class="sun-icon" size={20}/>
       </button>
       <a class="icon-button github-button" href="https://github.com/flandolusukalate" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><Github size={19}/></a>
-      <button class="icon-button mobile-toggle" type="button" aria-label="展开导航" aria-expanded="false" aria-controls="mobile-menu"><Menu class="menu-icon" size={21}/><X class="close-icon" size={21}/></button>
+      <button class="icon-button mobile-toggle" type="button" aria-label={t('展开导航')} aria-expanded="false" aria-controls="mobile-menu"><Menu class="menu-icon" size={21}/><X class="close-icon" size={21}/></button>
     </div>
   </div>
-  <nav class="mobile-menu" id="mobile-menu" aria-label="移动端导航" hidden>
-    {links.map(link => <a href={link.href} aria-current={pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)) ? 'page' : undefined}>{link.label}<span>{link.title}</span></a>)}
-    <a href="/archive/">Archive <span>归档</span></a>
+  <nav class="mobile-menu" id="mobile-menu" aria-label={t('移动端导航')} hidden>
+    {links.map(link => <a href={localizedPath(link.href, locale)} aria-current={basePath(pathname) === link.href || (link.href !== '/' && basePath(pathname).startsWith(link.href)) ? 'page' : undefined}>{link.label}<span>{locale === 'zh' ? link.title : ''}</span></a>)}
+    <a href={localizedPath('/archive/', locale)}>Archive <span>{locale === 'zh' ? '归档' : ''}</span></a>
+    {alternatePath ? <a href={alternatePath} data-astro-reload lang={locale === 'en' ? 'zh-CN' : 'en'}>{locale === 'en' ? '中文' : 'English'}<span>{locale === 'en' ? '切换语言' : '切换语言 · Language'}</span></a> : <span class="unavailable">{t('暂无译文')}</span>}
   </nav>
 </header>
 <script>
+  import { localeFromPath, translator } from '../lib/i18n';
   const setupHeader = () => {
+    const t = translator(localeFromPath(location.pathname));
     const header = document.querySelector<HTMLElement>('.site-header');
     if (!header || header.dataset.bound === 'true') return;
     header.dataset.bound = 'true';
@@ -55,8 +64,17 @@ const links = [
       const open = menu?.hidden ?? true;
       if (menu) menu.hidden = !open;
       menuButton.setAttribute('aria-expanded', String(open));
-      menuButton.setAttribute('aria-label', open ? '关闭导航' : '展开导航');
+      menuButton.setAttribute('aria-label', t(open ? '关闭导航' : '展开导航'));
       document.body.classList.toggle('menu-open', open);
+    });
+    header.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && menu && !menu.hidden) {
+        menu.hidden = true;
+        menuButton?.setAttribute('aria-expanded', 'false');
+        menuButton?.setAttribute('aria-label', t('展开导航'));
+        document.body.classList.remove('menu-open');
+        menuButton?.focus();
+      }
     });
     menu?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
       menu.hidden = true;

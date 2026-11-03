@@ -1,0 +1,18 @@
+---
+import { localeFromPath, localizedPath, translator } from "../lib/i18n";
+
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ArrowLeft, Search } from 'lucide-astro';
+---
+<BaseLayout alternatePath={locale === 'en' ? '/404.html' : '/en/404/'} title={t("404 · 页面走丢了")}>
+  <section class="container section" style="text-align:center;min-height:62vh;display:grid;place-items:center">
+    <div>
+      <div style="font:italic 700 clamp(90px,17vw,180px) Georgia,serif;color:var(--purple);line-height:1">404</div>
+      <h1 style="font-size:26px;margin:12px 0">{t("这页书似乎被星光藏起来了 ✦")}</h1>
+      <p style="color:var(--text-muted);margin-bottom:26px">{t("也许它移动了位置，或者暂时还没有写完。")}</p>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap"><a class="btn btn-primary" href={localizedPath("/", locale)}><ArrowLeft size={16}/> {t("返回首页")}</a><a class="btn btn-secondary" href={localizedPath("/search/", locale)}><Search size={16}/> {t("搜索内容")}</a></div>
+    </div>
+  </section>
+</BaseLayout>

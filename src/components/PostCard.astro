@@ -1,21 +1,21 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { CalendarDays, Clock3, ArrowUpRight } from 'lucide-astro';
-import { formatDate, readingTime } from '../lib/content';
+import { formatDate, readingTime, entryPath } from '../lib/content';
 interface Props { post: CollectionEntry<'blog'>; horizontal?: boolean; }
 const { post, horizontal = false } = Astro.props;
 const cover = post.data.cover || '/illustrations/magic-book-library.webp';
 ---
 <article class:list={['post-card', { 'post-card-horizontal': horizontal }]} data-category={post.data.category}>
-  <a href={`/blog/${post.id}/`} class="post-card-link" aria-label={post.data.title}>
+  <a href={entryPath(post)} class="post-card-link" aria-label={post.data.title}>
     <div class="post-card-art">
       <img src={cover} alt="" loading="lazy" />
       <span class="post-card-category">{post.data.category}</span>
     </div>
     <div class="post-card-body">
       <div class="post-card-meta">
-        <span><CalendarDays size={14}/>{formatDate(post.data.pubDate)}</span>
-        <span><Clock3 size={14}/>{readingTime(post.body)} 分钟</span>
+        <span><CalendarDays size={14}/>{formatDate(post.data.pubDate, post.data.lang)}</span>
+        <span><Clock3 size={14}/>{readingTime(post.body)} {post.data.lang === 'en' ? 'min read' : '分钟'}</span>
       </div>
       <h3>{post.data.title}</h3>
       <p>{post.data.description}</p>

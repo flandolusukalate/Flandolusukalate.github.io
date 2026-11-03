@@ -4,24 +4,29 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
 import { site } from '../config';
+import { localeFromPath, localizedPath, basePath, otherLocale, translator } from '../lib/i18n';
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  alternatePath?: string | null;
 }
 
 const {
   title = site.title,
-  description = site.description,
+  description = t(site.description),
   image = '/illustrations/magic-book-library.webp',
+  alternatePath = localizedPath(basePath(Astro.url.pathname), otherLocale(locale)),
 } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site);
+const canonical = new URL(Astro.url.pathname.replace(/^\/404\/?$/, '/404.html'), Astro.site);
 const imageUrl = new URL(image, Astro.site);
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang={locale === 'en' ? 'en' : 'zh-CN'}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,8 +34,11 @@ const imageUrl = new URL(image, Astro.site);
     <meta name="description" content={description} />
     <meta name="theme-color" content="#FAF9FF" />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={locale === 'en' ? 'en' : 'zh-CN'} href={canonical} />
+    {alternatePath && <link rel="alternate" hreflang={locale === 'en' ? 'zh-CN' : 'en'} href={new URL(alternatePath, Astro.site)} />}
+    {import.meta.env.DEV && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="alternate" type="application/rss+xml" title="Flandolu's Space RSS" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="Flandolu's Space RSS" href={localizedPath('/rss.xml', locale)} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -57,8 +65,9 @@ const imageUrl = new URL(image, Astro.site);
   <body>
     <div class="global-orbit orbit-one" aria-hidden="true"></div>
     <div class="global-orbit orbit-two" aria-hidden="true"></div>
-    <Header />
+    <Header alternatePath={alternatePath} />
     <main id="main-content">
+      {import.meta.env.DEV && <p class="preview-notice">{locale === 'en' ? 'Local preview · includes unpublished drafts' : '本地预览 · 包含尚未发布的草稿'}</p>}
       <slot />
     </main>
     <Footer />

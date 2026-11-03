@@ -1,16 +1,9 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import PostCard from '../../components/PostCard.astro';
-import { getPosts } from '../../lib/content';
+import Page from "../../views/tags/[tag].astro";
+import { getPosts } from "../../lib/content";
 export async function getStaticPaths() {
-  const posts = await getPosts();
-  const tags = [...new Set(posts.flatMap(post=>post.data.tags))];
-  return tags.map(tag => ({ params: { tag }, props: { tag } }));
+  const posts=await getPosts("zh");
+  return [...new Set(posts.flatMap(post=>post.data.tags))].map(tag=>({params:{tag},props:{tag}}));
 }
-const { tag } = Astro.props;
-const posts = (await getPosts()).filter(post=>post.data.tags.includes(tag));
 ---
-<BaseLayout title={`#${tag} · 标签`}>
-  <section class="page-hero"><div class="container page-hero-content"><span class="section-eyebrow">Browse by topic</span><h1>#{tag}</h1><p>所有带有「{tag}」标签的文章。</p></div></section>
-  <section class="container section"><div class="posts-grid">{posts.map(post=><PostCard post={post}/>)}</div></section>
-</BaseLayout>
+<Page {...Astro.props} />

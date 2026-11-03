@@ -1,0 +1,59 @@
+---
+import { localeFromPath, translator } from "../lib/i18n";
+
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
+import { Search } from 'lucide-astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title={t("Search · 搜索")}>
+  <section class="page-hero"><div class="container page-hero-content"><span class="section-eyebrow">Find a little inspiration</span><h1>Search</h1><p>{t("在文章与项目记录中寻找关键词。")}</p></div></section>
+  <section class="container section" style="max-width:900px;min-height:400px">
+    <label class="search-field"><Search size={21}/><input type="search" id="site-search" placeholder={t("搜索文章、技术、标签...")} autocomplete="off" aria-label={t("搜索文章")}/></label>
+    <p id="search-status" style="font-size:13px;color:var(--text-muted);margin-top:14px" role="status">{t("输入关键词，开始探索 ✧")}</p>
+    <div class="search-results" id="search-results"></div>
+  </section>
+  <script>
+    import { localeFromPath, translator } from "../lib/i18n";
+    const initSearch = () => {
+      const locale = localeFromPath(location.pathname);
+      const t = translator(locale);
+      const input = document.querySelector<HTMLInputElement>('#site-search');
+      const status = document.querySelector<HTMLElement>('#search-status');
+      const list = document.querySelector<HTMLElement>('#search-results');
+      if (!input || !status || !list) return;
+      if (input.dataset.bound === 'true') return;
+      input.dataset.bound = 'true';
+      let last = 0;
+      input.addEventListener('input', async () => {
+        const version = ++last;
+        const query = input.value.trim();
+        list.replaceChildren();
+        if (!query) { status.textContent = t("输入关键词，开始探索 ✧"); return; }
+        status.textContent = t("正在寻找星光中的线索...");
+        try {
+          const moduleUrl = '/pagefind/pagefind.js';
+          const pagefind = await import(/* @vite-ignore */ moduleUrl);
+          const result = await pagefind.search(query);
+          if (version !== last) return;
+          status.textContent = result.results.length ? (locale === 'en' ? result.results.length + ' results found' : `找到 ${result.results.length} 条结果`) : t("还没有找到相关内容，换个关键词试试吧。");
+          const entries = await Promise.all(result.results.slice(0, 20).map((item: { data: () => Promise<{ url:string; meta:{title?:string}; excerpt?:string }> }) => item.data()));
+          if (version !== last) return;
+          for (const entry of entries) {
+            const link = document.createElement('a');
+            link.className = 'search-result';
+            link.href = entry.url;
+            const title = document.createElement('h3');
+            title.textContent = entry.meta.title || t("未命名文章");
+            const excerpt = document.createElement('p');
+            excerpt.textContent = (entry.excerpt || '').replace(/<[^>]*>/g, '').slice(0, 180);
+            link.append(title, excerpt);
+            list.append(link);
+          }
+        } catch { if (version !== last) return; status.textContent = t("搜索索引暂不可用，请稍后刷新页面重试。"); }
+      });
+    };
+    document.addEventListener('astro:page-load', initSearch);
+    initSearch();
+  </script>
+</BaseLayout>

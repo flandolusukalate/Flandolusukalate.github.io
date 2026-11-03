@@ -1,9 +1,11 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { ArrowUpRight, Github, Code2, BookOpen, Wallet } from 'lucide-astro';
-import { statusLabel } from '../lib/content';
+import { statusLabel, entryPath } from '../lib/content';
+import { translator } from '../lib/i18n';
 interface Props { project: CollectionEntry<'projects'>; index?: number; }
 const { project, index = 0 } = Astro.props;
+const t = translator(project.data.lang);
 const icons = [Code2, Wallet, BookOpen];
 const Icon = icons[index % icons.length];
 ---
@@ -14,15 +16,15 @@ const Icon = icons[index % icons.length];
   </div>
   <div class="project-body">
     <div class="project-heading">
-      <a href={`/projects/${project.id}/`}><h3>{project.data.title}</h3></a>
-      <span class:list={['status-pill', `status-${project.data.status}`]}>{statusLabel[project.data.status]}</span>
+      <a href={entryPath(project)}><h3>{project.data.title}</h3></a>
+      <span class:list={['status-pill', `status-${project.data.status}`]}>{t(statusLabel[project.data.status])}</span>
     </div>
     <p>{project.data.description}</p>
     <div class="tag-list">{project.data.techStack.map(tag => <span class="tag">{tag}</span>)}</div>
     <div class="project-actions">
-      <a href={`/projects/${project.id}/`}>项目详情 <ArrowUpRight size={15}/></a>
+      <a href={entryPath(project)}>{t('项目详情')} <ArrowUpRight size={15}/></a>
       {project.data.repoUrl && <a href={project.data.repoUrl} target="_blank" rel="noopener noreferrer"><Github size={16}/> GitHub</a>}
-      {project.data.demoUrl && <a href={project.data.demoUrl} target="_blank" rel="noopener noreferrer">在线体验 <ArrowUpRight size={15}/></a>}
+      {project.data.demoUrl && <a href={project.data.demoUrl} target="_blank" rel="noopener noreferrer">{t('在线体验')} <ArrowUpRight size={15}/></a>}
     </div>
   </div>
 </article>

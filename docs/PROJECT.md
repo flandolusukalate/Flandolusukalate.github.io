@@ -2,7 +2,7 @@
 
 一间以「梦幻数字书房」为主题的个人博客、项目集与生活记录空间。
 
-> 当前是首版可运行网站。文章、项目与动态包含明确标注的示例内容，需由站主逐步替换。评论区尚未开启，启用 Giscus 需要公开 GitHub 仓库的 Discussions 配置。
+> 现已增加本地浏览器文章管理和中英双语版本。使用方法见 [写作与发布指南](WRITING.md)。文章、项目与动态仍保留明确标注的示例内容，需由站主逐步替换。评论区尚未开启。
 
 ## 技术栈
 
@@ -10,7 +10,7 @@
 - TypeScript
 - Tailwind CSS 4 / CSS 设计变量
 - Astro Content Collections（Markdown / MDX）
-- Pagefind（构建时生成的中文搜索索引）
+- Pagefind（构建时分别生成中英文搜索索引）
 - GitHub Actions → GitHub Pages
 
 ## 本地启动

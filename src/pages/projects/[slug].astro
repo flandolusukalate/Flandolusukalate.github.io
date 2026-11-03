@@ -1,34 +1,8 @@
 ---
-import { render, type CollectionEntry } from 'astro:content';
-import { ArrowLeft, Github, ExternalLink } from 'lucide-astro';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getProjects, statusLabel } from '../../lib/content';
+import Page from "../../views/projects/[slug].astro";
+import { getProjects, slugOf } from "../../lib/content";
 export async function getStaticPaths() {
-  const projects = await getProjects();
-  return projects.map(project => ({ params: { slug: project.id }, props: { project } }));
+  return (await getProjects("zh")).map(project => ({params:{slug:slugOf(project)},props:{project}}));
 }
-interface Props { project: CollectionEntry<'projects'>; }
-const { project } = Astro.props;
-const { Content } = await render(project);
 ---
-<BaseLayout title={project.data.title} description={project.data.description}>
-  <section class="page-hero">
-    <div class="container page-hero-content">
-      <span class="section-eyebrow">Project details</span>
-      <h1 data-pagefind-body data-pagefind-meta="title">{project.data.title}</h1>
-      <p data-pagefind-body>{project.data.description}</p>
-    </div>
-  </section>
-  <section class="container section" style="max-width:900px">
-    <div class="tag-list" style="margin-bottom:22px" data-pagefind-body>
-      <span class="tag">{statusLabel[project.data.status]}</span>
-      {project.data.techStack.map(tag => <span class="tag">{tag}</span>)}
-    </div>
-    <div class="prose" data-pagefind-body><Content /></div>
-    <div class="project-actions" style="margin-top:36px">
-      <a href="/projects/"><ArrowLeft size={15}/> 返回项目列表</a>
-      {project.data.repoUrl && <a href={project.data.repoUrl} target="_blank" rel="noopener noreferrer"><Github size={16}/> GitHub 仓库</a>}
-      {project.data.demoUrl && <a href={project.data.demoUrl} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/> 在线演示</a>}
-    </div>
-  </section>
-</BaseLayout>
+<Page {...Astro.props} />

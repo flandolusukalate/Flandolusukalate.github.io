@@ -5,6 +5,7 @@ import { glob } from 'astro/loaders';
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
   schema: z.object({
+    lang: z.enum(['zh', 'en']).default('zh'),
     title: z.string(),
     description: z.string(),
     pubDate: z.coerce.date(),
@@ -22,6 +23,7 @@ const blog = defineCollection({
 const projects = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/projects' }),
   schema: z.object({
+    lang: z.enum(['zh', 'en']).default('zh'),
     title: z.string(),
     description: z.string(),
     status: z.enum(['planned', 'developing', 'released', 'archived']),
@@ -38,6 +40,7 @@ const projects = defineCollection({
 const moments = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/moments' }),
   schema: z.object({
+    lang: z.enum(['zh', 'en']).default('zh'),
     pubDate: z.coerce.date(),
     title: z.string().optional(),
     tags: z.array(z.string()).default([]),

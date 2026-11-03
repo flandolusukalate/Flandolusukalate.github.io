@@ -1,0 +1,18 @@
+---
+import { localeFromPath, translator } from "../lib/i18n";
+import { entryPath } from "../lib/content";
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, formatDate } from '../lib/content';
+const posts = await getPosts(locale);
+const years = [...new Set(posts.map(post => post.data.pubDate.getFullYear()))];
+---
+<BaseLayout title={t("Archive · 归档")}>
+  <section class="page-hero"><div class="container page-hero-content"><span class="section-eyebrow">Through the seasons</span><h1>Archive</h1><p>{t("沿着时间的轨迹，翻阅写下的每一页。")}</p></div></section>
+  <section class="container section">
+    <div class="archive-years">
+      {years.map(year => <section class="archive-year"><h2>{year} ✧</h2>{posts.filter(p=>p.data.pubDate.getFullYear()===year).map(post=><div class="archive-row"><a href={entryPath(post)}>{post.data.title}</a><time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate, locale)}</time></div>)}</section>)}
+    </div>
+  </section>
+</BaseLayout>

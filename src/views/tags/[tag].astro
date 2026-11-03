@@ -1,0 +1,18 @@
+---
+import { localeFromPath } from "../../lib/i18n";
+
+const locale = localeFromPath(Astro.url.pathname);
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPosts } from '../../lib/content';
+import { translatedTagPath } from '../../lib/tags';
+import { otherLocale } from '../../lib/i18n';
+
+const { tag } = Astro.props;
+const posts = (await getPosts(locale)).filter(post=>post.data.tags.includes(tag));
+const alternateTags = (await getPosts(otherLocale(locale))).flatMap(post=>post.data.tags);
+---
+<BaseLayout alternatePath={translatedTagPath(tag, locale, alternateTags)} title={locale === "en" ? `#${tag} · Tags` : `#${tag} · 标签`}>
+  <section class="page-hero"><div class="container page-hero-content"><span class="section-eyebrow">Browse by topic</span><h1>#{tag}</h1><p>{locale === "en" ? `Articles tagged “${tag}”.` : `所有带有「${tag}」标签的文章。`}</p></div></section>
+  <section class="container section"><div class="posts-grid">{posts.map(post=><PostCard post={post}/>)}</div></section>
+</BaseLayout>

@@ -1,0 +1,9 @@
+---
+import Page from "../../../views/tags/[tag].astro";
+import { getPosts } from "../../../lib/content";
+export async function getStaticPaths() {
+  const posts=await getPosts("en");
+  return [...new Set(posts.flatMap(post=>post.data.tags))].map(tag=>({params:{tag},props:{tag}}));
+}
+---
+<Page {...Astro.props} />

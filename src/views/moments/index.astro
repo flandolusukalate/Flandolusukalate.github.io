@@ -1,0 +1,35 @@
+---
+import { localeFromPath, translator } from "../../lib/i18n";
+
+const locale = localeFromPath(Astro.url.pathname);
+const t = translator(locale);
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getMoments, formatDate } from '../../lib/content';
+const moments = await getMoments(locale);
+const rendered = await Promise.all(moments.map(async entry => ({ entry, Content: (await render(entry)).Content })));
+---
+<BaseLayout title={t("Moments · 动态")} description={t("记录 Flandolu 的生活碎片、学习进展与日常心情。")}>
+  <section class="page-hero">
+    <div class="container page-hero-content">
+      <span class="section-eyebrow">Tiny notes along the journey</span>
+      <h1>Moments</h1>
+      <p>{t("在漫长的时间里，留下一些细小而闪亮的足迹。")}</p>
+    </div>
+  </section>
+  <section class="container section">
+    <div class="moment-list">
+      {rendered.map(({entry,Content}) => (
+        <article class="moment-item">
+          <div class="moment-card">
+            <time class="moment-date" datetime={entry.data.pubDate.toISOString()}>{formatDate(entry.data.pubDate, locale)}</time>
+            {entry.data.title && <h2>{entry.data.title}</h2>}
+            <div class="prose"><Content/></div>
+            {entry.data.images.map(src => <div class="moment-image"><img src={src} alt={t("动态配图")} loading="lazy"/></div>)}
+            <div class="tag-list" style="margin-top:14px">{entry.data.tags.map(tag => <span class="tag">#{tag}</span>)}</div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

@@ -7,7 +7,9 @@
     "dev": "astro dev --host 0.0.0.0",
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview --host 0.0.0.0",
-    "check": "astro check"
+    "check": "node scripts/check-content.mjs && astro check",
+    "editor": "node scripts/editor.mjs --open",
+    "test": "node --test scripts/tests/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.5",
@@ -19,6 +21,7 @@
     "lucide-astro": "^0.556.0",
     "pagefind": "^1.4.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "yaml": "^2.9.1"
   }
 }
