@@ -138,7 +138,13 @@ function renderJob(job) {
   if(job.state!==lastJobState){
     lastJobState=job.state;
     if(job.state==='running'){working=true;form.inert=true;}
-    else {working=false;form.inert=false;document.querySelectorAll('form button').forEach(button=>{button.disabled=false;});refreshState();if(job.state==='failed')message(t('failed')+' '+job.error,true);}
+    else {
+      working=false;form.inert=false;
+      document.querySelectorAll('form button').forEach(button=>{button.disabled=false;});
+      refreshState();
+      if(job.state==='failed')message(t('failed')+' '+job.error,true);
+      else if(job.state==='complete')message(t('pushed'));
+    }
   }
 }
 window.addEventListener('beforeunload',event=>{if(dirty||working){event.preventDefault();event.returnValue='';}});

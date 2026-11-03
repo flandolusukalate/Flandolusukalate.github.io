@@ -110,4 +110,3 @@ const english: Record<string, string> = {
   "搜索内容": "Search the site"
 };
 export const translator = (locale: Locale) => (text: string) => locale === 'en' ? (english[text] ?? text) : text;
-
