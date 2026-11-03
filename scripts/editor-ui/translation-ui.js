@@ -1,6 +1,7 @@
 const $ = selector => document.querySelector(selector);
 const copy = {
-  heading:['英文译文','English translation'], settings:['翻译设置','Translation settings'],
+  heading:['翻译与双语','Translation'], settings:['翻译设置','Translation settings'],
+  briefMissing:['未配置','Not set up'],briefSave:['先保存','Save first'],briefManual:['可编辑','Available'],briefRunning:['生成中','Generating'],briefReady:['待审阅','Review ready'],briefStale:['需更新','Outdated'],briefCurrent:['已同步','Up to date'],briefFailed:['未完成','Failed'],briefDraft:['编辑中','Editing'],
   generate:['生成／更新英文','Generate / update English'], review:['检查候选译文','Review candidate'], source:['对照中文原文','Chinese source'],
   privacy:['所选中文文章的标题、摘要、分类、标签和正文会发送给 DeepSeek，按其 API 用量计费。生成不会发布。','The selected Chinese article’s title, summary, category, tags and body are sent to DeepSeek and billed at its API rates. Generation does not publish.'],
   keyNote:['密钥经 Windows 当前账户加密后保存在本机，不进入仓库。已配置时留空可保留原密钥。','Windows encrypts the key for your account and stores it locally, outside the repository. Leave blank to keep an existing key.'],
@@ -12,6 +13,7 @@ const copy = {
   adopt:['载入英文草稿以修改','Load English draft for editing'],
   missing:['先在「翻译设置」配置 DeepSeek；也可以继续手动编辑另一语言。','Configure DeepSeek in Translation settings, or keep editing the other language manually.'],
   saveFirst:['请先保存中文文章，再生成译文。','Save the Chinese article before generating a translation.'],
+  saveChanges:['有未保存的修改，请先保存；已有译文保持不变。','Save your changes first; the existing translation is unchanged.'],
   running:['正在生成英文候选译文，请保持编辑器启动窗口运行…','Generating an English candidate. Keep the editor’s terminal running…'],
   stale:['原文或英文已修改，旧候选译文不可采用。请重新生成。','Chinese or English changed. Generate again before adopting this candidate.'],
   ready:['候选译文已就绪；请检查并载入编辑，已有英文尚未改变。','Candidate ready. Review and load it for editing; existing English is unchanged.'],
@@ -41,10 +43,20 @@ export function translationDesk({ api, context, locale, message, leave, adopt })
     if (pair?.translatedHash) status = t(pair.translatedHash === pair.sourceHash ? 'current' : 'outdated');
     if (pair?.candidate) status = t(pair.candidate.stale ? 'stale' : 'ready');
     if (sameJob && state.job.state === 'failed') status = t('failed') + ' ' + state.job.error;
+    if (dirty) status = t('saveChanges');
     if (sameJob && running) status = t('running');
     if (pendingCandidate) status = t('localDraft');
-    $('#translation-status').textContent = status;
-    $('#translation-status').classList.toggle('error', sameJob && state.job?.state === 'failed');
+    if ($('#translation-status').textContent !== status) $('#translation-status').textContent = status;
+    let brief = !state.settings.configured ? 'briefMissing' : !current || dirty ? 'briefSave' : 'briefManual';
+    if (pair?.translatedHash) brief = pair.translatedHash === pair.sourceHash ? 'briefCurrent' : 'briefStale';
+    if (pair?.candidate) brief = pair.candidate.stale ? 'briefStale' : 'briefReady';
+    if (sameJob && state.job.state === 'failed') brief = 'briefFailed';
+    if (dirty) brief = 'briefSave';
+    if (sameJob && running) brief = 'briefRunning';
+    if (pendingCandidate) brief = 'briefDraft';
+    if ($('#translation-summary').textContent !== t(brief)) $('#translation-summary').textContent = t(brief);
+    $('#translation-summary').dataset.attention = String(['briefReady','briefStale','briefFailed'].includes(brief));
+    $('#translation-status').classList.toggle('error', !dirty && sameJob && state.job?.state === 'failed');
     $('#generate-translation').disabled = requesting || working || running || dirty || !current || current.lang !== 'zh' || !state.settings.configured;
     $('#generate-translation').hidden = current?.lang === 'en';
     $('#review-translation').hidden = !pair?.candidate;

@@ -5,12 +5,19 @@ const key = $('meta[name="editor-key"]').content;
 let ui = localStorage.getItem('flandolu-editor-language') === 'en' ? 'en' : 'zh';
 let articles = [], current = null, dirty = false, previewOrigin = '', reviewNonce = '', working = false, lastJobState = '';
 let pendingCandidate = null;
+let libraryScope = 'all';
 const words = {
+  editing:['编辑文章','Edit article'],writing:['写作区','Writing area'],articleSettings:['文章设置','Article settings'],
+  all:['全部','All'],filterArticles:['筛选文章','Filter articles'],summaryPlaceholder:['用一两句话介绍这篇文章…','Introduce this article in a sentence or two…'],
+  formatting:['Markdown 工具','Markdown tools'],headingFormat:['插入二级标题','Insert heading'],boldFormat:['加粗','Bold'],linkFormat:['插入链接','Insert link'],codeFormat:['插入代码块','Insert code block'],
+  headingText:['小标题','Heading'],boldText:['重点文字','Important text'],linkText:['链接文字','Link text'],codeText:['在这里写代码','Your code here'],characters:['字符','characters'],
+  formatUnavailable:['浏览器未能插入格式，正文保持不变。可以直接输入 Markdown 语法。','Your browser could not insert the formatting. The text is unchanged; you can type Markdown directly.'],
+  noChanges:['暂无需要发布的本地改动，可以继续编辑文章。','There are no local changes to publish. You can keep editing.'],
   tagsPlaceholder:['Astro, 学习笔记','Astro, Study Notes'],
   local:['仅在本机运行','Local only'],library:['文章书架','Article library'],new:['＋ 新文章','＋ New article'],filter:['查找文章','Find an article'],filterPlaceholder:['查找标题、语言或标签…','Find a title, language or tag…'],
   storage:['文章仍保存在项目的 Markdown 文件中，可随时使用其他编辑器。','Articles stay in your project as Markdown files. You can use another editor at any time.'],
   language:['文章语言','Article language'],slug:['网址名称（保存后固定）','URL slug (fixed after saving)'],translation:['编辑另一语言','Edit other language'],title:['标题','Title'],titlePlaceholder:['一个值得记录的想法','An idea worth keeping'],description:['摘要','Summary'],date:['发布日期','Publication date'],updated:['更新日期（可选）','Updated on (optional)'],category:['分类','Category'],tags:['标签（用逗号分隔）','Tags (comma-separated)'],
-  options:['封面与展示设置','Cover and display settings'],cover:['封面路径（留空使用原有书房插画）','Cover path (leave empty for the library illustration)'],featured:['精选文章','Featured article'],body:['正文 · Markdown','Body · Markdown'],upload:['插入图片','Insert image'],bodyPlaceholder:['## 从这里开始…','## Start here…'],syntax:['## 二级标题 · **加粗** · [链接](https://…) · 代码块用三个反引号包围','## Heading · **Bold** · [Link](https://…) · Wrap code blocks in three backticks'],
+  options:['日期、封面与展示','Dates, cover & display'],cover:['封面路径（留空使用原有书房插画）','Cover path (leave empty for the library illustration)'],featured:['精选文章','Featured article'],body:['正文 · Markdown','Body · Markdown'],upload:['插入图片','Insert image'],bodyPlaceholder:['## 从这里开始…','## Start here…'],syntax:['支持 Markdown · 选中文字后可使用上方工具 · Ctrl / ⌘ + S 保存到本机','Markdown supported · Select text to format it · Ctrl / ⌘ + S saves locally'],
   draft:['草稿','Draft'],save:['保存到本机','Save locally'],preview:['预览文章 ↗','Preview article ↗'],review:['检查并发布','Review & publish'],
   publishNote:['保存不会上传。取消“草稿”并保存后，可检查改动、构建并推送到 GitHub。公开仓库里的文章源码可被任何人查看。','Saving does not upload. Uncheck Draft and save to review, build and push to GitHub. Article source in a public repository is visible to everyone.'],
   progress:['发布进度','Publication progress'],actions:['查看 GitHub 部署进度 ↗','View GitHub deployment ↗'],reviewTitle:['确认本次发布','Review this publication'],
@@ -38,31 +45,46 @@ function applyLanguage() {
   document.documentElement.lang = ui === 'en' ? 'en' : 'zh-CN';
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-placeholder]').forEach(el => { el.placeholder = t(el.dataset.placeholder); });
+  document.querySelectorAll('[data-label]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.label)); if (el.tagName === 'BUTTON') el.title = t(el.dataset.label); });
   $('#ui-language').textContent = ui === 'en' ? '中文' : 'English';
-  renderList(); refreshState();
+  renderList(); refreshState(); updateCount();
 }
 function refreshState() {
-  $('#editor-title').textContent = current?.data.title || t('newTitle');
-  $('#save-state').textContent = dirty ? t('unsaved') : current ? t('saved') : t('notSaved');
+  $('#editor-title').textContent = current ? t('editing') : t('newTitle');
+  const saveText = dirty ? t('unsaved') : current ? t('saved') : t('notSaved');
+  if ($('#save-state').textContent !== saveText) $('#save-state').textContent = saveText;
+  $('#save-state').dataset.state = dirty ? 'unsaved' : current ? 'saved' : 'empty';
   $('#url-hint').textContent = urlFor({lang:field('lang').value,slug:field('slug').value || '…'});
   const canPreview = current && !dirty && previewOrigin;
   $('#preview').setAttribute('aria-disabled', String(!canPreview));
   if (canPreview) $('#preview').href = previewOrigin + urlFor(current); else $('#preview').removeAttribute('href');
   $('#review').disabled = working || !current || dirty || field('draft').checked;
   $('#translation').disabled = working || !current;
+  $('#new').disabled = working;
   field('draft').disabled = !!pendingCandidate;
   translator.render();
+}
+function updateCount() {
+  $('#word-count').textContent = `${Array.from(field('body').value.replace(/\s/g, '')).length.toLocaleString(ui === 'en' ? 'en-US' : 'zh-CN')} ${t('characters')}`;
+}
+function closeLibrary() {
+  document.body.classList.remove('library-open');
+  $('#library-toggle').setAttribute('aria-expanded', 'false');
 }
 function renderList() {
   const query = $('#filter').value.toLowerCase();
   const list = $('#articles'); list.replaceChildren();
-  for (const article of articles.filter(a => (a.data.title + ' ' + a.lang + ' ' + a.data.tags.join(' ')).toLowerCase().includes(query))) {
+  for (const article of articles.filter(a => (libraryScope === 'all' || (libraryScope === 'draft' ? a.data.draft : a.lang === libraryScope)) && (a.data.title + ' ' + a.lang + ' ' + a.data.tags.join(' ')).toLowerCase().includes(query))) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'article-item';
     const active = article.slug === current?.slug && article.lang === current?.lang;
     button.classList.toggle('active', active); button.setAttribute('aria-current', active ? 'true' : 'false');
-    const title = document.createElement('strong'); title.textContent = article.data.title;
-    const meta = document.createElement('small'); meta.textContent = `${article.lang === 'en' ? 'EN' : '中文'} · ${article.data.pubDate} · ${article.data.draft ? t('draft') : t('published')}`;
-    button.append(title,meta); button.addEventListener('click', () => { if (leave()) selectArticle(article); }); list.append(button);
+    const title = document.createElement('strong'); title.textContent = article.data.title; button.title = article.data.title;
+    const meta = document.createElement('small');
+    const language = document.createElement('span'); language.className = 'article-language'; language.textContent = article.lang === 'en' ? 'EN' : '中文';
+    const date = document.createElement('time'); date.dateTime = article.data.pubDate; date.textContent = article.data.pubDate;
+    const status = document.createElement('span'); status.className = 'article-status'; status.textContent = article.data.draft ? t('draft') : t('published');
+    meta.append(language,date,status);
+    button.append(title,meta); button.addEventListener('click', () => { if (leave()) {selectArticle(article);closeLibrary();if(matchMedia('(max-width: 900px)').matches)$('#editor-title').focus();} }); list.append(button);
   }
   if (!list.children.length) { const empty=document.createElement('p');empty.textContent=t('empty');list.append(empty); }
   $('#categories').replaceChildren(...[...new Set(articles.map(a=>a.data.category))].map(category => { const option=document.createElement('option'); option.value=category; return option; }));
@@ -78,7 +100,7 @@ function selectArticle(article, translation) {
   field('draft').checked = data.draft; field('featured').checked = data.featured;
   field('body').value = article?.body ?? '';
   field('lang').disabled = !!article || !!translation; field('slug').disabled = !!article || !!translation;
-  refreshState(); renderList();
+  refreshState(); renderList(); updateCount();
 }
 function collect() {
   const data = {};
@@ -92,20 +114,56 @@ function collect() {
 async function run(action) {
   if (working) return;
   working = true; form.inert = true; document.querySelectorAll('form button').forEach(button=>{button.disabled=true;});
-  try { await action(); } catch(error) { message(error.message,true); }
+  try { await action(); } catch(error) { const unchanged = error.message === 'No local changes to publish.'; message(unchanged ? t('noChanges') : error.message, !unchanged); }
   finally { working=lastJobState==='running';form.inert=working;document.querySelectorAll('form button').forEach(button=>{button.disabled=working;});refreshState(); }
 }
 const translator = translationDesk({ api, locale:()=>ui, context:()=>({current,dirty,working,pendingCandidate}), message, leave, adopt({candidate,target}) {
   selectArticle({ ...target, slug:candidate.slug, lang:'en', revision:target?.revision ?? null, data:candidate.data, body:candidate.body });
   pendingCandidate = candidate.id; dirty = true; refreshState();
 } });
-form.addEventListener('input', () => {dirty=true;refreshState();});
+form.addEventListener('input', event => {dirty=true;if(event.target === field('body'))updateCount();refreshState();});
+// Native validation must be able to focus required fields inside a collapsed section.
+form.addEventListener('invalid', event => {
+  let section = event.target.closest('details');
+  while (section) { section.open = true; section = section.parentElement.closest('details'); }
+}, true);
 form.addEventListener('submit', event => {event.preventDefault();if (!form.reportValidity()) return;run(async()=>{
   const saved = await api('save', collect());
   const state = await api('state'); articles = state.articles; translator.update(state.translation); selectArticle(saved); message(saved.translationWarning || t('saveOK'), !!saved.translationWarning);
 });});
 $('#filter').addEventListener('input',renderList);
-$('#new').addEventListener('click',()=>{if(leave())selectArticle(null);});
+document.querySelectorAll('[data-scope]').forEach(button=>button.addEventListener('click',()=>{
+  libraryScope=button.dataset.scope;
+  document.querySelectorAll('[data-scope]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+  renderList();
+}));
+$('#library-toggle').addEventListener('click',()=>{
+  const open=document.body.classList.toggle('library-open');
+  $('#library-toggle').setAttribute('aria-expanded',String(open));
+  if(open)$('#filter').focus();
+});
+$('#new').addEventListener('click',()=>{if(leave()){selectArticle(null);closeLibrary();field('title').focus();}});
+document.querySelectorAll('[data-format]').forEach(button=>button.addEventListener('click',()=>{
+  const area=field('body'), start=area.selectionStart, end=area.selectionEnd, selected=area.value.slice(start,end);
+  const formats={heading:['## ', '', t('headingText')],bold:['**','**',t('boldText')],link:['[','](https://)',t('linkText')],code:['```\n','\n```',t('codeText')]};
+  const [prefix,suffix,placeholder]=formats[button.dataset.format];
+  const block=button.dataset.format==='heading'||button.dataset.format==='code';
+  const before=block&&start>0&&area.value[start-1]!=='\n'?'\n':'';
+  const after=block&&end<area.value.length&&area.value[end]!=='\n'?'\n':'';
+  const text=selected||placeholder;
+  area.focus();area.setSelectionRange(start,end);
+  // Unlike setRangeText, insertText preserves the textarea's native Undo history.
+  // https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand
+  if(!document.execCommand('insertText',false,before+prefix+text+suffix+after)){message(t('formatUnavailable'));return;}
+  area.setSelectionRange(start+before.length+prefix.length,start+before.length+prefix.length+text.length);
+  area.dispatchEvent(new Event('input',{bubbles:true}));
+}));
+document.addEventListener('keydown',event=>{
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'&&!document.querySelector('dialog[open]')){
+    event.preventDefault();if(!working)form.requestSubmit();
+  }
+  if(event.key==='Escape'&&document.body.classList.contains('library-open')){closeLibrary();$('#library-toggle').focus();}
+});
 $('#ui-language').addEventListener('click',()=>{ui=ui==='en'?'zh':'en';localStorage.setItem('flandolu-editor-language',ui);applyLanguage();});
 $('#translation').addEventListener('click',()=>{
   if (!current || !leave()) return;
@@ -122,7 +180,7 @@ $('#image-file').addEventListener('change',event=>run(async()=>{
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);});
   const result=await api('upload',{base64});
   const area=field('body');area.setRangeText(`\n![${ui==='en'?'Image description':'图片描述'}](${result.path})\n`,area.selectionStart,area.selectionEnd,'end');
-  dirty=true;message(t('uploaded'));event.target.value='';
+  dirty=true;updateCount();message(t('uploaded'));event.target.value='';
 }));
 $('#review').addEventListener('click',()=>run(async()=>{
   if(!current||dirty)throw new Error(t('saveFirst'));
