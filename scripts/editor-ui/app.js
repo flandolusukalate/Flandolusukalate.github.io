@@ -1,8 +1,10 @@
+import { translationDesk } from './translation-ui.js';
 const $ = selector => document.querySelector(selector);
 const form = $('#article-form'), field = name => form.elements.namedItem(name);
 const key = $('meta[name="editor-key"]').content;
 let ui = localStorage.getItem('flandolu-editor-language') === 'en' ? 'en' : 'zh';
 let articles = [], current = null, dirty = false, previewOrigin = '', reviewNonce = '', working = false, lastJobState = '';
+let pendingCandidate = null;
 const words = {
   tagsPlaceholder:['Astro, 学习笔记','Astro, Study Notes'],
   local:['仅在本机运行','Local only'],library:['文章书架','Article library'],new:['＋ 新文章','＋ New article'],filter:['查找文章','Find an article'],filterPlaceholder:['查找标题、语言或标签…','Find a title, language or tag…'],
@@ -48,6 +50,8 @@ function refreshState() {
   if (canPreview) $('#preview').href = previewOrigin + urlFor(current); else $('#preview').removeAttribute('href');
   $('#review').disabled = working || !current || dirty || field('draft').checked;
   $('#translation').disabled = working || !current;
+  field('draft').disabled = !!pendingCandidate;
+  translator.render();
 }
 function renderList() {
   const query = $('#filter').value.toLowerCase();
@@ -66,6 +70,7 @@ function renderList() {
 function leave() { if (working) {message(t('working'));return false;} return !dirty || confirm(t('discard')); }
 function selectArticle(article, translation) {
   form.reset(); current = article; dirty = false; message();
+  pendingCandidate = null; translator.selected(article, articles);
   const data = article?.data ?? {lang:translation?.lang ?? 'zh',title:'',description:'',pubDate:new Date().toLocaleDateString('en-CA'),category:translation?.lang === 'en' ? 'Technical Notes' : '技术笔记',draft:true,featured:false,tags:[]};
   for (const name of ['lang','title','description','pubDate','updatedDate','category','cover']) field(name).value = data[name] ?? '';
   field('slug').value = article?.slug ?? translation?.slug ?? '';
@@ -80,7 +85,9 @@ function collect() {
   for (const name of ['lang','title','description','pubDate','updatedDate','category','cover']) data[name] = field(name).value.trim();
   data.tags = field('tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
   data.tags = [...new Set(data.tags)]; data.draft=field('draft').checked; data.featured=field('featured').checked;
-  return {lang:data.lang,slug:field('slug').value.trim(),revision:current?.revision ?? null,data,body:field('body').value};
+  if (current?.data.translationOf) data.translationOf = current.data.translationOf;
+  if (current?.data.translationCandidateId) data.translationCandidateId = current.data.translationCandidateId;
+  return {lang:data.lang,slug:field('slug').value.trim(),revision:current?.revision ?? null,data,body:field('body').value,translationCandidate:pendingCandidate};
 }
 async function run(action) {
   if (working) return;
@@ -88,10 +95,14 @@ async function run(action) {
   try { await action(); } catch(error) { message(error.message,true); }
   finally { working=lastJobState==='running';form.inert=working;document.querySelectorAll('form button').forEach(button=>{button.disabled=working;});refreshState(); }
 }
+const translator = translationDesk({ api, locale:()=>ui, context:()=>({current,dirty,working,pendingCandidate}), message, leave, adopt({candidate,target}) {
+  selectArticle({ ...target, slug:candidate.slug, lang:'en', revision:target?.revision ?? null, data:candidate.data, body:candidate.body });
+  pendingCandidate = candidate.id; dirty = true; refreshState();
+} });
 form.addEventListener('input', () => {dirty=true;refreshState();});
 form.addEventListener('submit', event => {event.preventDefault();if (!form.reportValidity()) return;run(async()=>{
   const saved = await api('save', collect());
-  articles = (await api('state')).articles; selectArticle(saved); message(t('saveOK'));
+  const state = await api('state'); articles = state.articles; translator.update(state.translation); selectArticle(saved); message(saved.translationWarning || t('saveOK'), !!saved.translationWarning);
 });});
 $('#filter').addEventListener('input',renderList);
 $('#new').addEventListener('click',()=>{if(leave())selectArticle(null);});
@@ -149,7 +160,7 @@ function renderJob(job) {
 }
 window.addEventListener('beforeunload',event=>{if(dirty||working){event.preventDefault();event.returnValue='';}});
 try {
-  const state=await api('state');articles=state.articles;previewOrigin=state.preview;selectArticle(articles[0]??null);applyLanguage();renderJob(state.job);
+  const state=await api('state');articles=state.articles;previewOrigin=state.preview;translator.update(state.translation);selectArticle(articles[0]??null);applyLanguage();renderJob(state.job);
   let lastPreviewError='';
-  setInterval(async()=>{try{const state=await api('state');previewOrigin=state.preview;refreshState();renderJob(state.job);if(state.previewError&&state.previewError!==lastPreviewError){lastPreviewError=state.previewError;message(state.previewError,true);}}catch{/* Keep form intact if terminal closes. */}},2500);
+  setInterval(async()=>{try{const state=await api('state');previewOrigin=state.preview;translator.update(state.translation);refreshState();renderJob(state.job);if(state.previewError&&state.previewError!==lastPreviewError){lastPreviewError=state.previewError;message(state.previewError,true);}}catch{/* Keep form intact if terminal closes. */}},2500);
 } catch(error) {message(error.message,true);}

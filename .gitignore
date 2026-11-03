@@ -9,3 +9,4 @@ dist/
 .cache/
 .impeccable/
 *.tmp
+.local-editor/

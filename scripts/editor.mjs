@@ -6,8 +6,12 @@ import { randomBytes } from 'node:crypto';
 import { spawn, fork } from 'node:child_process';
 import { listArticles, saveArticle, uploadImage } from './lib/articles.mjs';
 import { reviewPublication, publishArticle } from './lib/publish.mjs';
+import { translationSettings } from './lib/translation-settings.mjs';
+import { translations } from './lib/translations.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const settings = await translationSettings();
+const translator = translations(root, settings);
 const port = Number(process.env.EDITOR_PORT ?? 4311);
 const previewPort = Number(process.env.PREVIEW_PORT ?? 4321);
 if (![port, previewPort].every(p => Number.isInteger(p) && p >= 1024 && p < 65536) || port === previewPort) throw new Error('Invalid editor/preview ports.');
@@ -31,7 +35,7 @@ const server = createServer(async (req, res) => {
   if (req.headers.host !== `127.0.0.1:${port}`) return json(res, 403, { error:'Invalid host.' });
   const path = new URL(req.url, origin).pathname;
   try {
-    if (['/', '/app.js', '/style.css'].includes(path) && req.method === 'GET') {
+    if (['/', '/app.js', '/translation-ui.js', '/style.css'].includes(path) && req.method === 'GET') {
       const file = path === '/' ? 'index.html' : path.slice(1);
       const source = (await readFile(resolve(root, 'scripts/editor-ui', file), 'utf8')).replace('__SESSION_KEY__', token);
       res.writeHead(200, {'Content-Type': file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/css; charset=utf-8'});
@@ -39,13 +43,23 @@ const server = createServer(async (req, res) => {
     }
     if (!path.startsWith('/api/')) return json(res, 404, {error:'Not found.'});
     if (req.headers['x-editor-key'] !== token) return json(res, 403, {error:'Reload the editor to reconnect.'});
-    if (req.method === 'GET' && path === '/api/state') return json(res, 200, {articles:await listArticles(root), preview: previewUrl, previewError, job});
+    if (req.method === 'GET' && path === '/api/state') {
+      const articles = await listArticles(root);
+      return json(res, 200, {articles, preview:previewUrl, previewError, job, translation:await translator.state(articles)});
+    }
     if (req.method !== 'POST' || req.headers.origin !== origin || !req.headers['content-type']?.startsWith('application/json')) return json(res, 403, {error:'Same-origin JSON requests only.'});
     if (busy) return json(res, 409, {error:'Another save or publication is running. Please wait.'});
     busy = true;
     try {
       const input = await body(req);
-      if (path === '/api/save') { review = null; return json(res, 200, await saveArticle(root, input)); }
+      if (path === '/api/save') {
+        review = null; await translator.validateSave(input);
+        const saved = await saveArticle(root, input), translationWarning = await translator.afterSave(saved);
+        return json(res, 200, { ...saved, translationWarning });
+      }
+      if (path === '/api/translation-settings') return json(res, 200, await settings.save(input));
+      if (path === '/api/translate') { await translator.start(input); return json(res, 202, { started:true }); }
+      if (path === '/api/translation-candidate') return json(res, 200, await translator.candidateForReview(input));
       if (path === '/api/upload') { review = null; return json(res, 200, await uploadImage(root, input)); }
       if (path === '/api/review') {
         review = { ...await reviewPublication(root, input), nonce: randomBytes(24).toString('hex') };

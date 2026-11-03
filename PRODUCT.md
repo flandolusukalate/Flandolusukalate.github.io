@@ -18,6 +18,8 @@ Astro generates a static website for GitHub Pages. Markdown remains the content 
 
 This iteration covers creating and editing articles, local previews, reviewed publication, and bilingual navigation and content. Each language version can be drafted and published separately. Preserve the original README. No hosted CMS account is needed.
 
+Optional DeepSeek translation generates a local English candidate after a Chinese save or an explicit request. The owner compares, edits, saves as a draft, and publishes separately. Existing English is preserved until explicit saving. Credentials stay outside the repository, encrypted for the Windows account or supplied through the environment; automatic calls are opt-in and use the owner's API account.
+
 ## Brand commitments
 
 Preserve the silver-white and pale-purple digital study, existing dragon-girl artwork, typography and theme choices. Changes are incremental.

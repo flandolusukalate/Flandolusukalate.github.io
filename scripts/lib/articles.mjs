@@ -40,6 +40,8 @@ export function validateArticle(data, body) {
   for (const key of ['title', 'description', 'category']) if (typeof data[key] !== 'string' || !data[key].trim()) throw new Error(`${key} is required.`);
   for (const key of ['pubDate', 'updatedDate']) if ((key === 'pubDate' || data[key]) && !validDate(data[key])) throw new Error(`${key}: expected a valid YYYY-MM-DD date.`);
   if (data.lang !== undefined && !['zh','en'].includes(data.lang)) throw new Error('Invalid language.');
+  if (data.translationOf !== undefined && !/^[a-f0-9]{64}$/.test(data.translationOf)) throw new Error('Invalid translation source hash.');
+  if (data.translationCandidateId !== undefined && !/^[a-f0-9-]{36}$/.test(data.translationCandidateId)) throw new Error('Invalid translation candidate ID.');
   if (!Array.isArray(data.tags) || data.tags.some(tag => typeof tag !== 'string' || !tag.trim())) throw new Error('Tags must be non-empty strings.');
   for (const key of ['draft', 'featured']) if (typeof data[key] !== 'boolean') throw new Error(`${key} must be true or false.`);
   if (typeof body !== 'string' || (!data.draft && !body.trim())) throw new Error('Published articles need Markdown content.');
@@ -80,7 +82,7 @@ export async function saveArticle(root, input) {
   if (data.lang !== input.lang) throw new Error('Language does not match the file.');
   const file = existing?.file ?? `${base}.md`, target = await safePath(root, file);
   const doc = existing ? parseArticle(await readFile(target, 'utf8')).doc : new Document();
-  for (const key of ['title','description','pubDate','updatedDate','category','tags','cover','featured','draft','lang']) {
+  for (const key of ['title','description','pubDate','updatedDate','category','tags','cover','featured','draft','lang','translationOf','translationCandidateId']) {
     const value = data[key];
     if (value === undefined || (['cover','updatedDate'].includes(key) && !value)) doc.delete(key);
     else doc.set(key, value);

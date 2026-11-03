@@ -34,7 +34,25 @@ npm run editor
 ## 中英版本
 
 点击「编辑另一语言」可打开对应译文；没有译文时会生成同名文章的新表单。
-请自行填写译文，工具不会自动调用在线翻译服务，也不需要 API Key。
+可以手动填写，也可以接入 DeepSeek 生成英文候选译文。
+
+### DeepSeek 自动翻译
+
+1. 打开编辑器上方的「翻译设置」，在 [DeepSeek 控制台](https://platform.deepseek.com/api_keys) 创建 API Key，并直接填入本机编辑器。不要把 Key 发到聊天或提交到 GitHub。
+2. 默认使用 DeepSeek Flash，可切换为 V4 Pro。勾选「保存中文变更后，自动生成英文候选译文」并保存设置。默认不开启自动调用。
+3. 新增或修改中文文章并「保存到本机」。也可对已保存的中文点击「生成／更新英文」。没有内容变化时，自动模式不会重复生成。仅在外部文本编辑器修改文件不会触发翻译，需要回到本编辑器保存或手动生成。
+4. 等待「候选译文已就绪」，点击「检查候选译文」对照中英文，然后「载入英文草稿以修改」。可编辑标题、摘要、分类、标签和完整 Markdown；展开「对照中文原文」可继续核对。
+5. 首次必须保存为草稿。完成审阅并预览后，取消「草稿」、再次保存，再执行原有「检查并发布」流程。中英文仍分别发布，生成绝不会自动推送。
+
+DeepSeek 会接收所选文章的标题、摘要、分类、标签和正文文本，按其 API 用量收费；不会发送其他文章或 Git 凭据。代码与 HTML 使用占位符保护，译文恢复后会核对代码、HTML 和链接目标；图片只保留路径，不上传图片文件。仍应检查术语、事实与语气，机器检查不能保证翻译准确。
+
+API Key 使用 Windows 当前账户的 DPAPI 加密，保存到 `%APPDATA%/FlandoluSpace/translation.json`，不在项目目录。设置页只显示是否配置，不回显密钥；留空保存会保留原 Key，「移除密钥」会同时关闭自动翻译。也可在启动编辑器的环境中设置 `DEEPSEEK_API_KEY`，此时以环境变量为准；修改后需重启。非 Windows 环境请使用环境变量。
+
+候选译文保存在被 Git 忽略的 `.local-editor/translations/`，重启后仍可查看。载入表单不会修改英文文件，明确保存才会替换本地英文；正式网站需发布后才改变。中文或英文在生成期间发生变化时，候选会标记失效，必须重新生成。中文后续更新时，已生成的英文也会显示需要更新。现有手动译文没有来源指纹，不推断其是否过时。
+
+当前一次翻译支持 `.md` 正文 1–24,000 字符；MDX 继续手动翻译。一次只运行一个翻译任务；另一篇保存时若任务繁忙，会提示稍后手动生成。请求超时、余额不足、限流或格式错误会提示重试，保留已有英文和上一次候选，不自动重试扣费。生成中保持编辑器启动窗口运行，页面可以关闭；关闭启动窗口会中断未完成的生成。
+
+接口与模型以 [DeepSeek 官方文档](https://api-docs.deepseek.com/) 为准；目前只连接官方 `https://api.deepseek.com/chat/completions`。
 
 | 语言 | 文件 | 网站地址 |
 | --- | --- | --- |
@@ -91,7 +109,22 @@ Wait for GitHub Actions, then visit the live page. A successful push is not yet 
 Use **Edit other language** to create or open the matching translation. Chinese files
 live in `src/content/blog/`; English files with `lang: en` live in
 `src/content/blog/en/`. Matching filenames pair translations. Write and publish
-each version separately. Translation is manual; no translation API or credentials are used.
+each version separately. Optional DeepSeek translation is available in **Translation settings**.
+
+Enter an API key locally, choose Flash or V4 Pro, and optionally enable generation after
+saving Chinese changes. API calls send only the selected article’s text to DeepSeek and
+incur its usage charges. Automatic generation is off by default. Saved Windows keys are
+encrypted for your Windows account outside the repository; `DEEPSEEK_API_KEY` is also supported.
+
+Choose **Generate / update English**, then **Review candidate** and **Load English draft for editing**.
+Check and edit the English fields alongside **Chinese source**. The first save must be a draft;
+after review and preview, uncheck Draft, save again and use the existing publication flow.
+Generation never uploads or publishes. Existing English is unchanged until you explicitly save.
+Candidates survive restarts in the Git-ignored `.local-editor/translations/` folder.
+Source/target changes invalidate a pending candidate; updated Chinese marks generated English out of date.
+Code, HTML and link destinations are checked, but meaning and terminology still require human review.
+Only `.md` bodies of 1–24,000 characters are supported automatically. MDX remains manual.
+Requests are not retried automatically. Keep the editor terminal running during generation.
 
 Dates are metadata, not scheduled publishing. A public repository exposes committed
 source even when a document is marked as a draft. If another editor changes a file,
